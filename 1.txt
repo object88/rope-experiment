@@ -1,0 +1,16 @@
+goos: darwin
+goarch: amd64
+pkg: github.com/object88/rope-experiment
+Benchmark_Add_Small/500-8         	 5000000	       304 ns/op
+Benchmark_Add_Small/750-8         	 5000000	       345 ns/op
+Benchmark_Add_Small/1000-8        	 5000000	       348 ns/op
+Benchmark_Add_Small/2500-8        	 2000000	       738 ns/op
+Benchmark_Add_Small/5000-8        	 1000000	      1143 ns/op
+Benchmark_Add_Small/7500-8        	 1000000	      2784 ns/op
+Benchmark_Add_Small/10000-8       	 1000000	      3526 ns/op
+Benchmark_Add_Small/12500-8       	 1000000	     10746 ns/op
+Benchmark_Add_Small/15000-8       	  100000	     10253 ns/op
+Benchmark_Add_Small/17500-8       	  500000	     15921 ns/op
+Benchmark_Add_Small/20000-8       	  300000	      3812 ns/op
+PASS
+ok  	github.com/object88/rope-experiment	42.501s
