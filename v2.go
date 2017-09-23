@@ -1,6 +1,14 @@
 package ropeExperiment
 
-import "fmt"
+import (
+	"fmt"
+	"io"
+)
+
+// This code is a mostly-direct translation of
+// https://github.com/component/rope.  Many thanks to the contributers and
+// maintainers of http://component.github.io/ for their unknown contributions
+// to this project.
 
 const (
 	splitLength = 512
@@ -32,6 +40,10 @@ func (r *V2) Insert(position int, value string) error {
 	}
 
 	return r.insert(position, value)
+}
+
+func (r *V2) NewReader() io.Reader {
+	return &V2Reader{0, r}
 }
 
 // Rebalance rebalances the b-tree structure
@@ -111,6 +123,19 @@ func (r *V2) insert(position int, value string) error {
 	return nil
 }
 
+func (r *V2) locate(position int) (*V2, int) {
+	if r.value != nil {
+		return r, position
+	}
+
+	leftLength := r.left.length
+	if position < leftLength {
+		return r.left.locate(position)
+	}
+
+	return r.right.locate(position - leftLength)
+}
+
 func (r *V2) rebuild() {
 	if r.value == nil {
 		v := r.left.String() + r.right.String()
@@ -185,4 +210,48 @@ func (r *V2) substring(start, end int) string {
 	}
 
 	return ""
+}
+
+type V2Reader struct {
+	pos int
+	r   *V2
+}
+
+func (read *V2Reader) Read(p []byte) (n int, err error) {
+	if read.pos == read.r.length {
+		return 0, io.EOF
+	}
+
+	node, offset := read.r.locate(read.pos)
+
+	copied := copy(p, (*node.value)[offset:])
+	read.pos += copied
+	return copied, nil
+}
+
+func (read *V2Reader) WriteTo(w io.Writer) (int64, error) {
+	n, err := read.writeNodeTo(read.r, w)
+	return int64(n), err
+}
+
+func (read *V2Reader) writeNodeTo(r *V2, w io.Writer) (int, error) {
+	if r.value != nil {
+		copied, err := io.WriteString(w, *r.value)
+		if copied != r.length && err == nil {
+			err = io.ErrShortWrite
+		}
+		return copied, err
+	}
+
+	var err error
+	var n, m int
+
+	n, err = read.writeNodeTo(r.left, w)
+	if err != nil {
+		return n, err
+	}
+
+	m, err = read.writeNodeTo(r.right, w)
+
+	return int(n + m), err
 }

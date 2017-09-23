@@ -1,16 +1,21 @@
 goos: darwin
 goarch: amd64
 pkg: github.com/object88/rope-experiment
-Benchmark_Add_Small/500-8         	 5000000	       304 ns/op
-Benchmark_Add_Small/750-8         	 5000000	       345 ns/op
-Benchmark_Add_Small/1000-8        	 5000000	       348 ns/op
-Benchmark_Add_Small/2500-8        	 2000000	       738 ns/op
-Benchmark_Add_Small/5000-8        	 1000000	      1143 ns/op
-Benchmark_Add_Small/7500-8        	 1000000	      2784 ns/op
-Benchmark_Add_Small/10000-8       	 1000000	      3526 ns/op
-Benchmark_Add_Small/12500-8       	 1000000	     10746 ns/op
-Benchmark_Add_Small/15000-8       	  100000	     10253 ns/op
-Benchmark_Add_Small/17500-8       	  500000	     15921 ns/op
-Benchmark_Add_Small/20000-8       	  300000	      3812 ns/op
+Benchmark_Add_Small/500-8         	 5000000	       348 ns/op
+Benchmark_Add_Small/750-8         	 5000000	       364 ns/op
+Benchmark_Add_Small/1000-8        	 5000000	       402 ns/op
+Benchmark_Add_Small/2500-8        	 2000000	       832 ns/op
+Benchmark_Add_Small/5000-8        	 1000000	      1133 ns/op
+Benchmark_Add_Small/7500-8        	 1000000	      3646 ns/op
+Benchmark_Add_Small/10000-8       	  200000	      5530 ns/op
+Benchmark_Add_Small/12500-8       	  500000	      5080 ns/op
+Benchmark_Add_Small/15000-8       	  500000	      3662 ns/op
+Benchmark_Add_Small/17500-8       	  500000	      4079 ns/op
+Benchmark_Add_Small/20000-8       	  500000	      5718 ns/op
+Benchmark_Reader/100000-8         	  300000	      4992 ns/op
+Benchmark_Reader/125000-8         	  200000	      6320 ns/op
+Benchmark_Reader/150000-8         	  200000	      8087 ns/op
+Benchmark_Reader/175000-8         	  200000	      9964 ns/op
+Benchmark_Reader/200000-8         	  100000	     11078 ns/op
 PASS
-ok  	github.com/object88/rope-experiment	42.501s
+ok  	github.com/object88/rope-experiment	59.467s

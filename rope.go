@@ -1,9 +1,12 @@
 package ropeExperiment
 
+import "io"
+
 // Rope interface has the functionality for inserting and removing text
 // from the rope structure
 type Rope interface {
 	Insert(start int, value string) error
+	NewReader() io.Reader
 	Remove(start, end int) error
 }
 
