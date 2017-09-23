@@ -17,17 +17,15 @@ func Benchmark_Add_Small(b *testing.B) {
 		name string
 		init string
 	}{
-		{"500", strings.Repeat("0123456789", 50)},
-		{"750", strings.Repeat("0123456789", 75)},
-		{"1000", strings.Repeat("0123456789", 100)},
-		{"2500", strings.Repeat("0123456789", 250)},
-		{"5000", strings.Repeat("0123456789", 500)},
-		{"7500", strings.Repeat("0123456789", 750)},
-		{"10000", strings.Repeat("0123456789", 1000)},
-		{"12500", strings.Repeat("0123456789", 1250)},
-		{"15000", strings.Repeat("0123456789", 1500)},
-		{"17500", strings.Repeat("0123456789", 1750)},
-		{"20000", strings.Repeat("0123456789", 2000)},
+		{"1000", RandStringBytesMaskImprSrc(1000)},
+		{"2500", RandStringBytesMaskImprSrc(2500)},
+		{"5000", RandStringBytesMaskImprSrc(5000)},
+		{"7500", RandStringBytesMaskImprSrc(7500)},
+		{"10000", RandStringBytesMaskImprSrc(10000)},
+		{"12500", RandStringBytesMaskImprSrc(12500)},
+		{"15000", RandStringBytesMaskImprSrc(15000)},
+		// {"17500", RandStringBytesMaskImprSrc(17500)},
+		// {"20000", RandStringBytesMaskImprSrc(20000)},
 	}
 
 	var rc ropeCreator
@@ -88,22 +86,24 @@ func Benchmark_Reader(b *testing.B) {
 }
 
 func testAdd(creater ropeCreator, basename, init string, b *testing.B) {
-	var err error
 	b.Run(basename, func(b *testing.B) {
-		rs := make([]Rope, b.N)
-		for i := 0; i < b.N; i++ {
-			rs[i] = creater(init)
-		}
-
+		b.StopTimer()
 		b.ResetTimer()
 
 		for i := 0; i < b.N; i++ {
-			err = rs[i].Insert(0, "a")
+			r := creater(init)
+
+			b.StartTimer()
+
+			err := r.Insert(0, "a")
+
+			b.StopTimer()
+
+			if err != nil {
+				b.Fatal("Error during tests.")
+			}
 		}
 	})
-	if err != nil {
-		b.Fatal("Error during tests.")
-	}
 }
 
 func testReader(creater ropeCreator, basename, init string, b *testing.B) {
