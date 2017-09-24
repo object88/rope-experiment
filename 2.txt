@@ -1,17 +1,24 @@
 goos: darwin
 goarch: amd64
 pkg: github.com/object88/rope-experiment
-Benchmark_Add_Small/1000-8         	 3000000	       580 ns/op
-Benchmark_Add_Small/2500-8         	 2000000	       621 ns/op
-Benchmark_Add_Small/5000-8         	 3000000	       529 ns/op
-Benchmark_Add_Small/7500-8         	 3000000	       565 ns/op
-Benchmark_Add_Small/10000-8        	 3000000	       475 ns/op
-Benchmark_Add_Small/12500-8        	 3000000	       496 ns/op
-Benchmark_Add_Small/15000-8        	 3000000	       527 ns/op
-Benchmark_Reader/100000-8          	  100000	     11836 ns/op
-Benchmark_Reader/125000-8          	  100000	     12731 ns/op
-Benchmark_Reader/150000-8          	  100000	     21382 ns/op
-Benchmark_Reader/175000-8          	  100000	     22518 ns/op
-Benchmark_Reader/200000-8          	  100000	     23441 ns/op
+Benchmark_Add_Small/1000-8 	  100000	      9088 ns/op
+Benchmark_Add_Small/2500-8 	  100000	      8523 ns/op
+Benchmark_Add_Small/5000-8 	  100000	      8333 ns/op
+Benchmark_Add_Small/7500-8 	  100000	      9112 ns/op
+Benchmark_Add_Small/10000-8         	  100000	      8680 ns/op
+Benchmark_Add_Small/12500-8         	  100000	      9375 ns/op
+Benchmark_Add_Small/15000-8         	  100000	      9272 ns/op
+Benchmark_Reader/100000-8           	  100000	     11650 ns/op
+Benchmark_Reader/125000-8           	   50000	     12829 ns/op
+Benchmark_Reader/150000-8           	   30000	     21360 ns/op
+Benchmark_Reader/175000-8           	   30000	     24743 ns/op
+Benchmark_Reader/200000-8           	   30000	     23237 ns/op
+Benchmark_Remove_Small/1000-8       	  100000	      7989 ns/op
+Benchmark_Remove_Small/2500-8       	  100000	      7919 ns/op
+Benchmark_Remove_Small/5000-8       	  100000	      7841 ns/op
+Benchmark_Remove_Small/7500-8       	  100000	      8659 ns/op
+Benchmark_Remove_Small/10000-8      	  100000	      8355 ns/op
+Benchmark_Remove_Small/12500-8      	  100000	      8609 ns/op
+Benchmark_Remove_Small/15000-8      	  100000	      9480 ns/op
 PASS
-ok  	github.com/object88/rope-experiment	523.017s
+ok  	github.com/object88/rope-experiment	45.692s

@@ -142,11 +142,14 @@ func testAdd(creater ropeCreator, basename, init string, b *testing.B) {
 		b.ResetTimer()
 
 		for i := 0; i < b.N; i++ {
+			var err error
 			r := creater(init)
 
 			b.StartTimer()
 
-			err := r.Insert(0, "a")
+			for i := 0; i < 50; i++ {
+				err = r.Insert(i, "a")
+			}
 
 			b.StopTimer()
 
@@ -192,11 +195,14 @@ func testRemove(creater ropeCreator, basename, init string, b *testing.B) {
 		b.ResetTimer()
 
 		for i := 0; i < b.N; i++ {
+			var err error
 			r := creater(init)
 
 			b.StartTimer()
 
-			err := r.Remove(0, 1)
+			for i := 0; i < 50; i++ {
+				err = r.Remove(i, i+1)
+			}
 
 			b.StopTimer()
 
