@@ -108,6 +108,34 @@ func Benchmark_Reader(b *testing.B) {
 	}
 }
 
+func Benchmark_Remove_Small(b *testing.B) {
+	tests := []struct {
+		name string
+		init string
+	}{
+		{"1000", RandStringBytesMaskImprSrc(1000)},
+		{"2500", RandStringBytesMaskImprSrc(2500)},
+		{"5000", RandStringBytesMaskImprSrc(5000)},
+		{"7500", RandStringBytesMaskImprSrc(7500)},
+		{"10000", RandStringBytesMaskImprSrc(10000)},
+		{"12500", RandStringBytesMaskImprSrc(12500)},
+		{"15000", RandStringBytesMaskImprSrc(15000)},
+	}
+
+	var rc ropeCreator
+	if *version == "1" {
+		rc = func(init string) Rope { return CreateV1(init) }
+	} else if *version == "2" {
+		rc = func(init string) Rope { return CreateV2(init) }
+	} else {
+		b.Fatalf("'%s' is not a valid version", *version)
+	}
+
+	for _, tc := range tests {
+		testRemove(rc, tc.name, tc.init, b)
+	}
+}
+
 func testAdd(creater ropeCreator, basename, init string, b *testing.B) {
 	b.Run(basename, func(b *testing.B) {
 		b.StopTimer()
@@ -153,6 +181,27 @@ func testReader(creater ropeCreator, basename, init string, b *testing.B) {
 				if strings.Compare(result, init) != 0 {
 					b.Fatalf("Read failed:\nExpected:\n'%s'\nGot:\n'%s'", init, result)
 				}
+			}
+		}
+	})
+}
+
+func testRemove(creater ropeCreator, basename, init string, b *testing.B) {
+	b.Run(basename, func(b *testing.B) {
+		b.StopTimer()
+		b.ResetTimer()
+
+		for i := 0; i < b.N; i++ {
+			r := creater(init)
+
+			b.StartTimer()
+
+			err := r.Remove(0, 1)
+
+			b.StopTimer()
+
+			if err != nil {
+				b.Fatal("Error during tests.")
 			}
 		}
 	})
