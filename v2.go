@@ -171,47 +171,6 @@ func (r *V2) remove(start, end int) error {
 	return nil
 }
 
-func (r *V2) substring(start, end int) string {
-	if end == -1 {
-		end = r.length
-	}
-	if start < 0 {
-		start = 0
-	} else if start > r.length {
-		start = r.length
-	}
-	if end < 0 {
-		end = 0
-	} else if end > r.length {
-		end = r.length
-	}
-
-	if r.value != nil {
-		return (*r.value)[start:end]
-	}
-
-	leftLength := r.left.length
-	leftStart := min(start, leftLength)
-	leftEnd := min(end, leftLength)
-	rightLength := r.right.length
-	rightStart := max(0, min(start-leftLength, rightLength))
-	rightEnd := max(0, min(end-leftLength, rightLength))
-
-	if leftStart != leftEnd {
-		if rightStart != rightEnd {
-			return r.left.substring(leftStart, leftEnd) + r.right.substring(rightStart, rightEnd)
-		}
-
-		return r.left.substring(leftStart, leftEnd)
-	}
-
-	if rightStart != rightEnd {
-		return r.right.substring(rightStart, rightEnd)
-	}
-
-	return ""
-}
-
 type V2Reader struct {
 	pos int
 	r   *V2
