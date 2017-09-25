@@ -27,3 +27,7 @@ func (r *V1) Remove(start, end int) error {
 	r.value = r.value[0:start] + r.value[end:]
 	return nil
 }
+
+func (r *V1) String() string {
+	return r.value
+}

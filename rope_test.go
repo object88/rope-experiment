@@ -3,6 +3,7 @@ package ropeExperiment
 import (
 	"bytes"
 	"flag"
+	"fmt"
 	"io"
 	"strings"
 	"testing"
@@ -12,45 +13,103 @@ var version = flag.String("ver", "", "version of rope")
 
 type ropeCreator func(init string) Rope
 
-func Test_Add(t *testing.T) {
-	init := RandStringBytesMaskImprSrc(1000)
-	r := CreateV2(init)
+func Test_Insert(t *testing.T) {
+	tests := []struct {
+		size int
+	}{
+		{100},
+		{200},
+		{300},
+		{400},
+		{500},
+		{600},
+		{700},
+		{800},
+		{900},
+		{1000},
+	}
 
-	r.Insert(0, "a")
+	for _, tc := range tests {
+		t.Run(fmt.Sprintf("Insert-%d", tc.size), func(t *testing.T) {
+			init := RandStringBytesMaskImprSrc(tc.size)
+			r := Create(t, init)
 
-	result := r.String()
-	expected := "a" + init
-	if result != expected {
-		t.Fatalf("Insert failed:\nExpected:\n'%s'\nGet:\n'%s'", init, result)
+			r.Insert(0, "a")
+
+			result := r.String()
+			expected := "a" + init
+			if result != expected {
+				t.Fatalf("Insert failed:\nExpected:\n'%s'\nGet:\n'%s'", init, result)
+			}
+		})
 	}
 }
+
 func Test_Reader(t *testing.T) {
-	init := RandStringBytesMaskImprSrc(1000)
+	tests := []struct {
+		size int
+	}{
+		{100},
+		{200},
+		{300},
+		{400},
+		{500},
+		{600},
+		{700},
+		{800},
+		{900},
+		{1000},
+	}
 
-	var buf bytes.Buffer
-	buf.Grow(len(init))
+	for _, tc := range tests {
+		t.Run(fmt.Sprintf("Reader-%d", tc.size), func(t *testing.T) {
+			init := RandStringBytesMaskImprSrc(tc.size)
 
-	r := CreateV2(init)
-	reader := r.NewReader()
+			var buf bytes.Buffer
+			buf.Grow(len(init))
 
-	io.Copy(&buf, reader)
+			r := Create(t, init)
+			reader := r.NewReader()
 
-	result := string(buf.Bytes())
-	if strings.Compare(result, init) != 0 {
-		t.Fatalf("Read failed:\nExpected:\n'%s'\nGot:\n'%s'", init, result)
+			io.Copy(&buf, reader)
+
+			result := string(buf.Bytes())
+			if strings.Compare(result, init) != 0 {
+				t.Fatalf("Read failed:\nExpected:\n'%s'\nGot:\n'%s'", init, result)
+			}
+		})
 	}
 }
 
 func Test_Remove(t *testing.T) {
-	init := RandStringBytesMaskImprSrc(1000)
-	r := CreateV2(init)
+	tests := []struct {
+		size int
+	}{
+		{100},
+		{200},
+		{300},
+		{400},
+		{500},
+		{600},
+		{700},
+		{800},
+		{900},
+		{1000},
+	}
 
-	r.Remove(0, 1)
+	for _, tc := range tests {
+		t.Run(fmt.Sprintf("Remove-%d", tc.size), func(t *testing.T) {
+			init := RandStringBytesMaskImprSrc(tc.size)
+			r := Create(t, init)
 
-	result := r.String()
-	expected := init[1:]
-	if result != expected {
-		t.Fatalf("Remove failed:\nExpected:\n'%s'\nGet:\n'%s'", init, result)
+			r.Remove(0, 1)
+
+			result := r.String()
+			expected := init[1:]
+			if result != expected {
+				t.Fatalf("Remove failed:\nExpected:\n'%s'\nGet:\n'%s'", init, result)
+			}
+		})
 	}
 }
 
@@ -68,13 +127,9 @@ func Benchmark_Add_Small(b *testing.B) {
 		{"15000", RandStringBytesMaskImprSrc(15000)},
 	}
 
-	var rc ropeCreator
-	if *version == "1" {
-		rc = func(init string) Rope { return CreateV1(init) }
-	} else if *version == "2" {
-		rc = func(init string) Rope { return CreateV2(init) }
-	} else {
-		b.Fatalf("'%s' is not a valid version", *version)
+	rc, err := getCreater()
+	if nil != err {
+		b.Error(err)
 	}
 
 	for _, tc := range tests {
@@ -94,13 +149,9 @@ func Benchmark_Reader(b *testing.B) {
 		{"200000", RandStringBytesMaskImprSrc(200000)},
 	}
 
-	var rc ropeCreator
-	if *version == "1" {
-		rc = func(init string) Rope { return CreateV1(init) }
-	} else if *version == "2" {
-		rc = func(init string) Rope { return CreateV2(init) }
-	} else {
-		b.Fatalf("'%s' is not a valid version", *version)
+	rc, err := getCreater()
+	if nil != err {
+		b.Error(err)
 	}
 
 	for _, tc := range tests {
@@ -122,18 +173,29 @@ func Benchmark_Remove_Small(b *testing.B) {
 		{"15000", RandStringBytesMaskImprSrc(15000)},
 	}
 
-	var rc ropeCreator
-	if *version == "1" {
-		rc = func(init string) Rope { return CreateV1(init) }
-	} else if *version == "2" {
-		rc = func(init string) Rope { return CreateV2(init) }
-	} else {
-		b.Fatalf("'%s' is not a valid version", *version)
+	rc, err := getCreater()
+	if nil != err {
+		b.Error(err)
 	}
 
 	for _, tc := range tests {
 		testRemove(rc, tc.name, tc.init, b)
 	}
+}
+
+func getCreater() (ropeCreator, error) {
+	var rc ropeCreator
+	if *version == "1" {
+		rc = func(init string) Rope { return CreateV1(init) }
+	} else if *version == "2" {
+		rc = func(init string) Rope { return CreateV2(init) }
+	} else if *version == "3" {
+		rc = func(init string) Rope { return CreateV3(init) }
+	} else {
+		return nil, fmt.Errorf("'%s' is not a valid version", *version)
+	}
+
+	return rc, nil
 }
 
 func testAdd(creater ropeCreator, basename, init string, b *testing.B) {
@@ -211,4 +273,14 @@ func testRemove(creater ropeCreator, basename, init string, b *testing.B) {
 			}
 		}
 	})
+}
+
+func Create(t *testing.T, init string) Rope {
+	rc, err := getCreater()
+	if err != nil {
+		t.Fatal(err)
+		return nil
+	}
+	r := rc(init)
+	return r
 }
