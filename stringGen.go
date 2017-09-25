@@ -8,7 +8,10 @@ import (
 	"time"
 )
 
-const letterBytes = "abcdefghijklmnopqrstuvwxyzABCDEFGHIJKLMNOPQRSTUVWXYZ"
+const asciiLetterBytes = "abcdefghijklmnopqrstuvwxyzABCDEFGHIJKLMNOPQRSTUVWXYZ"
+
+var unicodeLetterBytes = [...]rune{'a', 'b', 'c', 'd', 'e', 'f', 'g', 'h', 'i', 'j', 'k', 'l', 'm', 'n', 'o', 'p', 'q', 'r', 's', 't', 'u', 'v', 'w', 'x', 'y', 'z', '™', '¥', '§', '©', '®', '¼', '¾', 'Δ', 'Φ', 'Ω', 'θ', 'λ', 'Ϣ', '🐈', '🐑', '🐿', '🍩', '☕', '🍷', '🍺', '🔪', '🚇', '🚲', '🕐', '📷', '🔬'}
+
 const (
 	letterIdxBits = 6                    // 6 bits to represent a letter index
 	letterIdxMask = 1<<letterIdxBits - 1 // All 1-bits, as many as letterIdxBits
@@ -17,15 +20,34 @@ const (
 
 var src = rand.NewSource(time.Now().UnixNano())
 
-func RandStringBytesMaskImprSrc(n int) string {
+func GenerateASCIIString(n int) string {
 	b := make([]byte, n)
 	// A src.Int63() generates 63 random bits, enough for letterIdxMax characters!
 	for i, cache, remain := n-1, src.Int63(), letterIdxMax; i >= 0; {
 		if remain == 0 {
 			cache, remain = src.Int63(), letterIdxMax
 		}
-		if idx := int(cache & letterIdxMask); idx < len(letterBytes) {
-			b[i] = letterBytes[idx]
+		if idx := int(cache & letterIdxMask); idx < len(asciiLetterBytes) {
+			b[i] = asciiLetterBytes[idx]
+			i--
+		}
+		cache >>= letterIdxBits
+		remain--
+	}
+
+	return string(b)
+}
+
+func GenerateUnicodeString(n int) string {
+	b := make([]rune, n)
+
+	// A src.Int63() generates 63 random bits, enough for letterIdxMax characters!
+	for i, cache, remain := n-1, src.Int63(), letterIdxMax; i >= 0; {
+		if remain == 0 {
+			cache, remain = src.Int63(), letterIdxMax
+		}
+		if idx := int(cache & letterIdxMask); idx < len(unicodeLetterBytes) {
+			b[i] = unicodeLetterBytes[idx]
 			i--
 		}
 		cache >>= letterIdxBits

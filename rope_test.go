@@ -13,8 +13,16 @@ var version = flag.String("ver", "", "version of rope")
 
 type ropeCreator func(init string) Rope
 
-func Test_Insert(t *testing.T) {
-	tests := []struct {
+func Test_Insert_To_Beginning(t *testing.T) {
+	charSets := []struct {
+		name      string
+		generator func(int) string
+	}{
+		{"ASCII", GenerateASCIIString},
+		{"Unicode", GenerateUnicodeString},
+	}
+
+	stringSizes := []struct {
 		size int
 	}{
 		{100},
@@ -29,24 +37,77 @@ func Test_Insert(t *testing.T) {
 		{1000},
 	}
 
-	for _, tc := range tests {
-		t.Run(fmt.Sprintf("Insert-%d", tc.size), func(t *testing.T) {
-			init := RandStringBytesMaskImprSrc(tc.size)
-			r := Create(t, init)
+	for _, charSet := range charSets {
+		for _, stringSize := range stringSizes {
+			t.Run(fmt.Sprintf("%s-Insert-%d", charSet.name, stringSize.size), func(t *testing.T) {
+				init := charSet.generator(stringSize.size)
+				r := Create(t, init)
 
-			r.Insert(0, "a")
+				r.Insert(0, "a")
 
-			result := r.String()
-			expected := "a" + init
-			if result != expected {
-				t.Fatalf("Insert failed:\nExpected:\n'%s'\nGet:\n'%s'", init, result)
-			}
-		})
+				result := r.String()
+				expected := "a" + init
+				if result != expected {
+					t.Fatalf("Insert failed:\nExpected:\n'%s'\nGet:\n'%s'", init, result)
+				}
+			})
+		}
+	}
+}
+
+func Test_Insert_To_Middle(t *testing.T) {
+	charSets := []struct {
+		name      string
+		generator func(int) string
+	}{
+		{"ASCII", GenerateASCIIString},
+		{"Unicode", GenerateUnicodeString},
+	}
+
+	stringSizes := []struct {
+		size int
+	}{
+		{100},
+		{200},
+		{300},
+		{400},
+		{500},
+		{600},
+		{700},
+		{800},
+		{900},
+		{1000},
+	}
+
+	for _, charSet := range charSets {
+		for _, stringSize := range stringSizes {
+			t.Run(fmt.Sprintf("%s-Insert-%d", charSet.name, stringSize.size), func(t *testing.T) {
+				init := charSet.generator(stringSize.size)
+				i := len(init) / 2
+				r := Create(t, init)
+
+				r.Insert(i, "a")
+
+				result := r.String()
+				expected := init[0:i] + "a" + init[i:]
+				if result != expected {
+					t.Fatalf("Insert failed:\nExpected:\n'%s'\nGet:\n'%s'", init, result)
+				}
+			})
+		}
 	}
 }
 
 func Test_Reader(t *testing.T) {
-	tests := []struct {
+	charSets := []struct {
+		name      string
+		generator func(int) string
+	}{
+		{"ASCII", GenerateASCIIString},
+		{"Unicode", GenerateUnicodeString},
+	}
+
+	stringSizes := []struct {
 		size int
 	}{
 		{100},
@@ -61,28 +122,38 @@ func Test_Reader(t *testing.T) {
 		{1000},
 	}
 
-	for _, tc := range tests {
-		t.Run(fmt.Sprintf("Reader-%d", tc.size), func(t *testing.T) {
-			init := RandStringBytesMaskImprSrc(tc.size)
+	for _, charSet := range charSets {
+		for _, stringSize := range stringSizes {
+			t.Run(fmt.Sprintf("%s-Reader-%d", charSet.name, stringSize.size), func(t *testing.T) {
+				init := charSet.generator(stringSize.size)
 
-			var buf bytes.Buffer
-			buf.Grow(len(init))
+				var buf bytes.Buffer
+				buf.Grow(len(init))
 
-			r := Create(t, init)
-			reader := r.NewReader()
+				r := Create(t, init)
+				reader := r.NewReader()
 
-			io.Copy(&buf, reader)
+				io.Copy(&buf, reader)
 
-			result := string(buf.Bytes())
-			if strings.Compare(result, init) != 0 {
-				t.Fatalf("Read failed:\nExpected:\n'%s'\nGot:\n'%s'", init, result)
-			}
-		})
+				result := string(buf.Bytes())
+				if strings.Compare(result, init) != 0 {
+					t.Fatalf("Read failed:\nExpected:\n'%s'\nGot:\n'%s'", init, result)
+				}
+			})
+		}
 	}
 }
 
-func Test_Remove(t *testing.T) {
-	tests := []struct {
+func Test_Remove_From_Beginning(t *testing.T) {
+	charSets := []struct {
+		name      string
+		generator func(int) string
+	}{
+		{"ASCII", GenerateASCIIString},
+		{"Unicode", GenerateUnicodeString},
+	}
+
+	stringSizes := []struct {
 		size int
 	}{
 		{100},
@@ -97,19 +168,64 @@ func Test_Remove(t *testing.T) {
 		{1000},
 	}
 
-	for _, tc := range tests {
-		t.Run(fmt.Sprintf("Remove-%d", tc.size), func(t *testing.T) {
-			init := RandStringBytesMaskImprSrc(tc.size)
-			r := Create(t, init)
+	for _, charSet := range charSets {
+		for _, stringSize := range stringSizes {
+			t.Run(fmt.Sprintf("%s-Remove-%d", charSet.name, stringSize.size), func(t *testing.T) {
+				init := charSet.generator(stringSize.size)
+				r := Create(t, init)
 
-			r.Remove(0, 1)
+				r.Remove(0, 1)
 
-			result := r.String()
-			expected := init[1:]
-			if result != expected {
-				t.Fatalf("Remove failed:\nExpected:\n'%s'\nGet:\n'%s'", init, result)
-			}
-		})
+				result := r.String()
+				expected := init[1:]
+				if result != expected {
+					t.Fatalf("Remove failed:\nExpected:\n'%s'\nGet:\n'%s'", init, result)
+				}
+			})
+		}
+	}
+}
+
+func Test_Remove_From_Middle(t *testing.T) {
+	charSets := []struct {
+		name      string
+		generator func(int) string
+	}{
+		{"ASCII", GenerateASCIIString},
+		{"Unicode", GenerateUnicodeString},
+	}
+
+	stringSizes := []struct {
+		size int
+	}{
+		{100},
+		{200},
+		{300},
+		{400},
+		{500},
+		{600},
+		{700},
+		{800},
+		{900},
+		{1000},
+	}
+
+	for _, charSet := range charSets {
+		for _, stringSize := range stringSizes {
+			t.Run(fmt.Sprintf("%s-Remove-%d", charSet.name, stringSize.size), func(t *testing.T) {
+				init := charSet.generator(stringSize.size)
+				i := len(init) / 2
+				r := Create(t, init)
+
+				r.Remove(i, i+1)
+
+				result := r.String()
+				expected := init[0:i] + init[i+1:]
+				if result != expected {
+					t.Fatalf("Remove failed:\nExpected:\n'%s'\nGet:\n'%s'", init, result)
+				}
+			})
+		}
 	}
 }
 
@@ -118,13 +234,13 @@ func Benchmark_Add_Small(b *testing.B) {
 		name string
 		init string
 	}{
-		{"1000", RandStringBytesMaskImprSrc(1000)},
-		{"2500", RandStringBytesMaskImprSrc(2500)},
-		{"5000", RandStringBytesMaskImprSrc(5000)},
-		{"7500", RandStringBytesMaskImprSrc(7500)},
-		{"10000", RandStringBytesMaskImprSrc(10000)},
-		{"12500", RandStringBytesMaskImprSrc(12500)},
-		{"15000", RandStringBytesMaskImprSrc(15000)},
+		{"1000", GenerateASCIIString(1000)},
+		{"2500", GenerateASCIIString(2500)},
+		{"5000", GenerateASCIIString(5000)},
+		{"7500", GenerateASCIIString(7500)},
+		{"10000", GenerateASCIIString(10000)},
+		{"12500", GenerateASCIIString(12500)},
+		{"15000", GenerateASCIIString(15000)},
 	}
 
 	rc, err := getCreater()
@@ -142,11 +258,11 @@ func Benchmark_Reader(b *testing.B) {
 		name string
 		init string
 	}{
-		{"100000", RandStringBytesMaskImprSrc(100000)},
-		{"125000", RandStringBytesMaskImprSrc(125000)},
-		{"150000", RandStringBytesMaskImprSrc(150000)},
-		{"175000", RandStringBytesMaskImprSrc(175000)},
-		{"200000", RandStringBytesMaskImprSrc(200000)},
+		{"100000", GenerateASCIIString(100000)},
+		{"125000", GenerateASCIIString(125000)},
+		{"150000", GenerateASCIIString(150000)},
+		{"175000", GenerateASCIIString(175000)},
+		{"200000", GenerateASCIIString(200000)},
 	}
 
 	rc, err := getCreater()
@@ -164,13 +280,13 @@ func Benchmark_Remove_Small(b *testing.B) {
 		name string
 		init string
 	}{
-		{"1000", RandStringBytesMaskImprSrc(1000)},
-		{"2500", RandStringBytesMaskImprSrc(2500)},
-		{"5000", RandStringBytesMaskImprSrc(5000)},
-		{"7500", RandStringBytesMaskImprSrc(7500)},
-		{"10000", RandStringBytesMaskImprSrc(10000)},
-		{"12500", RandStringBytesMaskImprSrc(12500)},
-		{"15000", RandStringBytesMaskImprSrc(15000)},
+		{"1000", GenerateASCIIString(1000)},
+		{"2500", GenerateASCIIString(2500)},
+		{"5000", GenerateASCIIString(5000)},
+		{"7500", GenerateASCIIString(7500)},
+		{"10000", GenerateASCIIString(10000)},
+		{"12500", GenerateASCIIString(12500)},
+		{"15000", GenerateASCIIString(15000)},
 	}
 
 	rc, err := getCreater()
