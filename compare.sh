@@ -7,5 +7,7 @@ go test -bench . -benchtime 500ms -ver 3 > 3.txt
 echo "Comparing v1 and v2"
 $GOPATH/bin/benchcmp 1.txt 2.txt
 
+echo ""
+
 echo "Comparing v1 and v3"
 $GOPATH/bin/benchcmp 1.txt 3.txt
