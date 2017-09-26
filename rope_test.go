@@ -16,7 +16,7 @@ type ropeCreator func(init string) Rope
 
 func Test_Insert(t *testing.T) {
 	initial := "🐿🐿🐿🐿🐿"
-	r := CreateV2(initial)
+	r := create(t, initial)
 	r.Insert(1, "a")
 
 	actual := r.String()

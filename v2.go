@@ -1,6 +1,7 @@
 package ropeExperiment
 
 import (
+	"bytes"
 	"fmt"
 	"io"
 	"unicode/utf8"
@@ -19,14 +20,15 @@ const (
 )
 
 type V2 struct {
-	right  *V2
-	left   *V2
-	value  *string
-	length int
+	right      *V2
+	left       *V2
+	value      *string
+	length     int
+	byteLength int
 }
 
 func CreateV2(initial string) *V2 {
-	r := &V2{nil, nil, &initial, utf8.RuneCountInString(initial)}
+	r := &V2{nil, nil, &initial, utf8.RuneCountInString(initial), len(initial)}
 	r.adjust()
 	return r
 }
@@ -82,35 +84,56 @@ func (r *V2) Remove(start, end int) error {
 }
 
 func (r *V2) String() string {
-	if r.value != nil {
-		return *r.value
-	}
-	return r.left.String() + r.right.String()
+	var buf bytes.Buffer
+	buf.Grow(r.byteLength)
+	read := r.NewReader()
+	io.Copy(&buf, read)
+	return string(buf.Bytes())
 }
 
 func (r *V2) adjust() {
 	if r.value != nil {
 		if r.length > splitLength {
 			divide := r.length >> 1
-			r.left = CreateV2(string([]rune(*r.value)[:divide]))
-			r.right = CreateV2(string([]rune(*r.value)[divide:]))
+			offset := r.findByteOffsets(divide)
+			r.left = CreateV2((*r.value)[:offset])
+			r.right = CreateV2((*r.value)[offset:])
 			r.value = nil
 		}
 	} else {
 		if r.length < joinLength {
-			v := r.left.String() + r.right.String()
-			r.value = &v
-			r.left = nil
-			r.right = nil
+			r.join()
 		}
 	}
 }
 
+func (r *V2) findByteOffsets(position int) int {
+	rs := []rune(*r.value)
+
+	offset := 0
+
+	for i := 0; i < position; i++ {
+		offset += utf8.RuneLen(rs[i])
+	}
+
+	return offset
+}
+
 func (r *V2) insert(position int, value string) error {
 	if r.value != nil {
-		v := string([]rune(*r.value)[0:position]) + value + string([]rune(*r.value)[position:])
-		r.value = &v
-		r.length = utf8.RuneCountInString(*r.value)
+		var buf bytes.Buffer
+		offset := r.findByteOffsets(position)
+		valueLength := utf8.RuneCountInString(value)
+		buf.Grow(r.length + len(value))
+		buf.WriteString((*r.value)[0:offset])
+		buf.WriteString(value)
+		buf.WriteString((*r.value)[offset:])
+		s := buf.String()
+		r.value = &s
+		r.length += valueLength
+		// v := string([]rune(*r.value)[0:position]) + value + string([]rune(*r.value)[position:])
+		// r.value = &v
+		// r.length = utf8.RuneCountInString(*r.value)
 	} else {
 		leftLength := r.left.length
 		if position < leftLength {
@@ -122,6 +145,18 @@ func (r *V2) insert(position int, value string) error {
 	}
 	r.adjust()
 	return nil
+}
+
+func (r *V2) join() {
+	c := r.left.byteLength + r.right.byteLength
+	var buf bytes.Buffer
+	buf.Grow(c)
+	io.Copy(&buf, r.left.NewReader())
+	io.Copy(&buf, r.right.NewReader())
+	s := buf.String()
+	r.value = &s
+	r.left = nil
+	r.right = nil
 }
 
 func (r *V2) locate(position int) (*V2, int) {
@@ -139,19 +174,22 @@ func (r *V2) locate(position int) (*V2, int) {
 
 func (r *V2) rebuild() {
 	if r.value == nil {
-		v := r.left.String() + r.right.String()
-		r.value = &v
-		r.left = nil
-		r.right = nil
+		r.join()
 		r.adjust()
 	}
 }
 
 func (r *V2) remove(start, end int) error {
 	if r.value != nil {
-		v := string([]rune(*r.value)[0:start]) + string([]rune(*r.value)[end:])
-		r.value = &v
-		r.length = utf8.RuneCountInString(*r.value)
+		var buf bytes.Buffer
+		byteStart := r.findByteOffsets(start)
+		byteEnd := r.findByteOffsets(end)
+		buf.Grow(len(*r.value) - byteEnd + byteStart)
+		buf.WriteString((*r.value)[0:byteStart])
+		buf.WriteString((*r.value)[byteEnd:])
+		s := buf.String()
+		r.value = &s
+		r.length -= end - start
 	} else {
 		leftLength := r.left.length
 		leftStart := min(start, leftLength)

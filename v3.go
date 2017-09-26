@@ -113,15 +113,17 @@ func (r *V3) insert(position int, value string) error {
 		buf.Write((*r.value)[offset:])
 		b := buf.Bytes()
 		r.value = &b
+		r.byteLength = len(b)
 		r.length += valueLength
 	} else {
 		leftLength := r.left.length
 		if position < leftLength {
 			r.left.insert(position, value)
-			r.length = r.left.length + r.right.length
 		} else {
 			r.right.insert(position-leftLength, value)
 		}
+		r.byteLength = r.left.byteLength + r.right.byteLength
+		r.length = r.left.length + r.right.length
 	}
 	r.adjust()
 	return nil
@@ -181,6 +183,7 @@ func (r *V3) remove(start, end int) error {
 		buf.Write((*r.value)[byteEnd:])
 		b := buf.Bytes()
 		r.value = &b
+		r.byteLength = len(b)
 		r.length -= end - start
 	} else {
 		leftLength := r.left.length
@@ -195,6 +198,7 @@ func (r *V3) remove(start, end int) error {
 			rightStart := max(0, min(start-leftLength, rightLength))
 			r.right.remove(rightStart, rightEnd)
 		}
+		r.byteLength = r.left.byteLength + r.right.byteLength
 		r.length = r.left.length + r.right.length
 	}
 
