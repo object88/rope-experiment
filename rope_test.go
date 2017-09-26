@@ -7,11 +7,25 @@ import (
 	"io"
 	"strings"
 	"testing"
+	"unicode/utf8"
 )
 
 var version = flag.String("ver", "", "version of rope")
 
 type ropeCreator func(init string) Rope
+
+func Test_Insert(t *testing.T) {
+	initial := "🐿🐿🐿🐿🐿"
+	r := CreateV2(initial)
+	r.Insert(1, "a")
+
+	actual := r.String()
+	expected := "🐿a🐿🐿🐿🐿"
+
+	if expected != actual {
+		t.Fatalf("Failed to properly insert:\nexpected %s\ngot %s\n", expected, actual)
+	}
+}
 
 func Test_Insert_To_Beginning(t *testing.T) {
 	charSets := []struct {
@@ -41,7 +55,7 @@ func Test_Insert_To_Beginning(t *testing.T) {
 		for _, stringSize := range stringSizes {
 			t.Run(fmt.Sprintf("%s-Insert-%d", charSet.name, stringSize.size), func(t *testing.T) {
 				init := charSet.generator(stringSize.size)
-				r := Create(t, init)
+				r := create(t, init)
 
 				r.Insert(0, "a")
 
@@ -83,13 +97,14 @@ func Test_Insert_To_Middle(t *testing.T) {
 		for _, stringSize := range stringSizes {
 			t.Run(fmt.Sprintf("%s-Insert-%d", charSet.name, stringSize.size), func(t *testing.T) {
 				init := charSet.generator(stringSize.size)
-				i := len(init) / 2
-				r := Create(t, init)
+				i := utf8.RuneCountInString(init) / 2
+				r := create(t, init)
 
 				r.Insert(i, "a")
 
 				result := r.String()
-				expected := init[0:i] + "a" + init[i:]
+				runes := []rune(init)
+				expected := string(runes[0:i]) + "a" + string(runes[i:])
 				if result != expected {
 					t.Fatalf("Insert failed:\nExpected:\n'%s'\nGet:\n'%s'", init, result)
 				}
@@ -130,7 +145,7 @@ func Test_Reader(t *testing.T) {
 				var buf bytes.Buffer
 				buf.Grow(len(init))
 
-				r := Create(t, init)
+				r := create(t, init)
 				reader := r.NewReader()
 
 				io.Copy(&buf, reader)
@@ -172,14 +187,17 @@ func Test_Remove_From_Beginning(t *testing.T) {
 		for _, stringSize := range stringSizes {
 			t.Run(fmt.Sprintf("%s-Remove-%d", charSet.name, stringSize.size), func(t *testing.T) {
 				init := charSet.generator(stringSize.size)
-				r := Create(t, init)
+				r := create(t, init)
 
 				r.Remove(0, 1)
 
 				result := r.String()
-				expected := init[1:]
+				if !utf8.ValidString(result) {
+					t.Fatal("Invalid UTF8 string")
+				}
+				expected := string([]rune(init)[1:])
 				if result != expected {
-					t.Fatalf("Remove failed:\nExpected:\n'%s'\nGet:\n'%s'", init, result)
+					t.Fatalf("Remove failed:\nOriginal:\n%q\nExpected:\n%q\nGet:\n%q", init, expected, result)
 				}
 			})
 		}
@@ -214,15 +232,26 @@ func Test_Remove_From_Middle(t *testing.T) {
 		for _, stringSize := range stringSizes {
 			t.Run(fmt.Sprintf("%s-Remove-%d", charSet.name, stringSize.size), func(t *testing.T) {
 				init := charSet.generator(stringSize.size)
-				i := len(init) / 2
-				r := Create(t, init)
+				i := utf8.RuneCountInString(init) / 2
+				r := create(t, init)
 
 				r.Remove(i, i+1)
 
 				result := r.String()
-				expected := init[0:i] + init[i+1:]
+				if !utf8.ValidString(result) {
+					b := []byte(result)
+					for i := 0; i < len(result); {
+						ru, n := utf8.DecodeRune(b)
+						if ru == utf8.RuneError {
+							t.Fatalf("Invalid UTF8 string; first instance at %d\n%s", i, result)
+						}
+						i += n
+					}
+					t.Fatal("Invalid UTF8 string")
+				}
+				expected := string([]rune(init)[0:i]) + string([]rune(init)[i+1:])
 				if result != expected {
-					t.Fatalf("Remove failed:\nExpected:\n'%s'\nGet:\n'%s'", init, result)
+					t.Fatalf("Remove failed:\nOriginal:\n%q\nExpected:\n%q\nGet:\n%q", init, expected, result)
 				}
 			})
 		}
@@ -391,7 +420,7 @@ func testRemove(creater ropeCreator, basename, init string, b *testing.B) {
 	})
 }
 
-func Create(t *testing.T, init string) Rope {
+func create(t *testing.T, init string) Rope {
 	rc, err := getCreater()
 	if err != nil {
 		t.Fatal(err)

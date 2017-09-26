@@ -1,24 +1,24 @@
 goos: darwin
 goarch: amd64
 pkg: github.com/object88/rope-experiment
-Benchmark_Add_Small/1000-8 	  100000	      9725 ns/op
-Benchmark_Add_Small/2500-8 	  100000	      9548 ns/op
-Benchmark_Add_Small/5000-8 	   50000	     10369 ns/op
-Benchmark_Add_Small/7500-8 	   50000	     11459 ns/op
-Benchmark_Add_Small/10000-8         	   50000	     10585 ns/op
-Benchmark_Add_Small/12500-8         	  100000	     11184 ns/op
-Benchmark_Add_Small/15000-8         	   50000	     11529 ns/op
-Benchmark_Reader/100000-8           	   50000	     12066 ns/op
-Benchmark_Reader/125000-8           	   50000	     13032 ns/op
-Benchmark_Reader/150000-8           	   30000	     22732 ns/op
-Benchmark_Reader/175000-8           	   30000	     25171 ns/op
-Benchmark_Reader/200000-8           	   30000	     27225 ns/op
-Benchmark_Remove_Small/1000-8       	  100000	      8100 ns/op
-Benchmark_Remove_Small/2500-8       	  100000	      7822 ns/op
-Benchmark_Remove_Small/5000-8       	  100000	      8620 ns/op
-Benchmark_Remove_Small/7500-8       	  100000	      8689 ns/op
-Benchmark_Remove_Small/10000-8      	  100000	      9258 ns/op
-Benchmark_Remove_Small/12500-8      	  100000	      8547 ns/op
-Benchmark_Remove_Small/15000-8      	  100000	      9819 ns/op
+Benchmark_Add_Small/1000-8 	    3000	    208572 ns/op
+Benchmark_Add_Small/2500-8 	    3000	    200680 ns/op
+Benchmark_Add_Small/5000-8 	    5000	    203213 ns/op
+Benchmark_Add_Small/7500-8 	    3000	    290402 ns/op
+Benchmark_Add_Small/10000-8         	    3000	    209279 ns/op
+Benchmark_Add_Small/12500-8         	    3000	    248040 ns/op
+Benchmark_Add_Small/15000-8         	    2000	    281155 ns/op
+Benchmark_Reader/100000-8           	  100000	     12107 ns/op
+Benchmark_Reader/125000-8           	   50000	     12451 ns/op
+Benchmark_Reader/150000-8           	   30000	     21195 ns/op
+Benchmark_Reader/175000-8           	   30000	     22284 ns/op
+Benchmark_Reader/200000-8           	   30000	     23352 ns/op
+Benchmark_Remove_Small/1000-8       	    3000	    274334 ns/op
+Benchmark_Remove_Small/2500-8       	    5000	    175403 ns/op
+Benchmark_Remove_Small/5000-8       	    5000	    172723 ns/op
+Benchmark_Remove_Small/7500-8       	    3000	    261538 ns/op
+Benchmark_Remove_Small/10000-8      	    5000	    176513 ns/op
+Benchmark_Remove_Small/12500-8      	    3000	    224494 ns/op
+Benchmark_Remove_Small/15000-8      	    3000	    258563 ns/op
 PASS
-ok  	github.com/object88/rope-experiment	44.545s
+ok  	github.com/object88/rope-experiment	40.966s

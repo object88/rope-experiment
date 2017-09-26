@@ -15,7 +15,7 @@ func CreateV1(initial string) Rope {
 }
 
 func (r *V1) Insert(start int, value string) error {
-	r.value = r.value[0:start] + value + r.value[start:]
+	r.value = string([]rune(r.value)[0:start]) + value + string([]rune(r.value)[start:])
 	return nil
 }
 
@@ -24,7 +24,7 @@ func (r *V1) NewReader() io.Reader {
 }
 
 func (r *V1) Remove(start, end int) error {
-	r.value = r.value[0:start] + r.value[end:]
+	r.value = string([]rune(r.value)[0:start]) + string([]rune(r.value)[end:])
 	return nil
 }
 

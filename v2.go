@@ -3,6 +3,7 @@ package ropeExperiment
 import (
 	"fmt"
 	"io"
+	"unicode/utf8"
 )
 
 // This code is a mostly-direct translation of
@@ -25,7 +26,7 @@ type V2 struct {
 }
 
 func CreateV2(initial string) *V2 {
-	r := &V2{nil, nil, &initial, len(initial)}
+	r := &V2{nil, nil, &initial, utf8.RuneCountInString(initial)}
 	r.adjust()
 	return r
 }
@@ -91,8 +92,8 @@ func (r *V2) adjust() {
 	if r.value != nil {
 		if r.length > splitLength {
 			divide := r.length >> 1
-			r.left = CreateV2((*r.value)[:divide])
-			r.right = CreateV2((*r.value)[divide:])
+			r.left = CreateV2(string([]rune(*r.value)[:divide]))
+			r.right = CreateV2(string([]rune(*r.value)[divide:]))
 			r.value = nil
 		}
 	} else {
@@ -107,9 +108,9 @@ func (r *V2) adjust() {
 
 func (r *V2) insert(position int, value string) error {
 	if r.value != nil {
-		v := (*r.value)[0:position] + value + (*r.value)[position:]
+		v := string([]rune(*r.value)[0:position]) + value + string([]rune(*r.value)[position:])
 		r.value = &v
-		r.length = len(*r.value)
+		r.length = utf8.RuneCountInString(*r.value)
 	} else {
 		leftLength := r.left.length
 		if position < leftLength {
@@ -148,20 +149,20 @@ func (r *V2) rebuild() {
 
 func (r *V2) remove(start, end int) error {
 	if r.value != nil {
-		v := (*r.value)[0:start] + (*r.value)[end:]
+		v := string([]rune(*r.value)[0:start]) + string([]rune(*r.value)[end:])
 		r.value = &v
-		r.length = len(*r.value)
+		r.length = utf8.RuneCountInString(*r.value)
 	} else {
 		leftLength := r.left.length
 		leftStart := min(start, leftLength)
-		leftEnd := min(end, leftLength)
 		rightLength := r.right.length
-		rightStart := max(0, min(start-leftLength, rightLength))
 		rightEnd := max(0, min(end-leftLength, rightLength))
 		if leftStart < leftLength {
+			leftEnd := min(end, leftLength)
 			r.left.remove(leftStart, leftEnd)
 		}
 		if rightEnd > 0 {
+			rightStart := max(0, min(start-leftLength, rightLength))
 			r.right.remove(rightStart, rightEnd)
 		}
 		r.length = r.left.length + r.right.length
@@ -177,13 +178,15 @@ type V2Reader struct {
 }
 
 func (read *V2Reader) Read(p []byte) (n int, err error) {
+	// NOTE: method not currently tested, because test code is invoking WriteTo
+	// instead.
 	if read.pos == read.r.length {
 		return 0, io.EOF
 	}
 
 	node, offset := read.r.locate(read.pos)
 
-	copied := copy(p, (*node.value)[offset:])
+	copied := copy(p, []byte(string([]rune(*node.value)[offset:])))
 	read.pos += copied
 	return copied, nil
 }
@@ -196,7 +199,7 @@ func (read *V2Reader) WriteTo(w io.Writer) (int64, error) {
 func (read *V2Reader) writeNodeTo(r *V2, w io.Writer) (int, error) {
 	if r.value != nil {
 		copied, err := io.WriteString(w, *r.value)
-		if copied != r.length && err == nil {
+		if copied != len(*r.value) && err == nil {
 			err = io.ErrShortWrite
 		}
 		return copied, err
