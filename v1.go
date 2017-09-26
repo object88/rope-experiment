@@ -1,8 +1,10 @@
 package ropeExperiment
 
 import (
+	"bytes"
 	"io"
 	"strings"
+	"unicode/utf8"
 )
 
 // V1 is a simple string
@@ -15,7 +17,13 @@ func CreateV1(initial string) Rope {
 }
 
 func (r *V1) Insert(start int, value string) error {
-	r.value = string([]rune(r.value)[0:start]) + value + string([]rune(r.value)[start:])
+	var buf bytes.Buffer
+	offset := r.findByteOffsets(start)
+	buf.Grow(len(r.value) + len(value))
+	buf.WriteString(r.value[:offset])
+	buf.WriteString(value)
+	buf.WriteString(r.value[offset:])
+	r.value = buf.String()
 	return nil
 }
 
@@ -24,10 +32,28 @@ func (r *V1) NewReader() io.Reader {
 }
 
 func (r *V1) Remove(start, end int) error {
-	r.value = string([]rune(r.value)[0:start]) + string([]rune(r.value)[end:])
+	var buf bytes.Buffer
+	byteStart := r.findByteOffsets(start)
+	byteEnd := r.findByteOffsets(end)
+	buf.Grow(len(r.value) - byteEnd + byteStart)
+	buf.WriteString(r.value[:byteStart])
+	buf.WriteString(r.value[byteEnd:])
+	r.value = buf.String()
 	return nil
 }
 
 func (r *V1) String() string {
 	return r.value
+}
+
+func (r *V1) findByteOffsets(position int) int {
+	rs := []rune(r.value)
+
+	offset := 0
+
+	for i := 0; i < position; i++ {
+		offset += utf8.RuneLen(rs[i])
+	}
+
+	return offset
 }
