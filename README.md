@@ -1,8 +1,24 @@
 # rope-experiment
 
-Experiment to evaluate different implementations of the rope data structure
+Experiment to evaluate different implementations of the rope data structure.  Conclusions of this (ongoing?) experiement are implemented in [rope](https://github.com/object88/rope).
 
 The [rope data structure](https://en.wikipedia.org/wiki/Rope_(data_structure)) is a way to handle ad-hoc edits to largish blocks of text, as one might make in a text editor.  To understand the difference in CPU usage for an edit, the project compares bare string manipulation with a basic rope implementation [translated from JavaScript](https://github.com/component/rope), and an improved version that operates over raw byte arrays.
+
+## Implementations
+
+`v1` is a simple string.  Edits are made by reconstructing the whole string using `bytes.Buffer`.
+
+`v2` is an actual rope implementation, using substrings as the data structure in each node in the B-Tree structure.
+
+`v3` is similar to `v2`, except that it uses a `[]byte` as the data structure in each node.  This _seems_ to have little effect on adding or removing characters to the rope, but gives a slight performance boost when reading out via an `io.Reader`.
+
+Further work may attempt to experiment further:
+
+* May use a fixed-size `[]byte` for each leaf.  Theoretically, if changes do not reallocate the memory used even in a leaf, we may see better performance.  This may be of diminishing return for the complexity, especially as there would need to be some temporary buffer allocated to shift bytes within the fixed buffer for insertions and deletions.
+
+* May have two implementations, one for ropes which contain just ASCII characters, and one which contains UFT8 or Unicode characters.  Operations on pure ASCII strings are much faster, as we don't need to map between rune offset and byte offset.  The rope may scan its initial content for any non-ASCII value, and if not found, start off with faster operations.  Once a non-ASCII rune is inserted, the three would need to be reassembled.
+
+## Tests
 
 The `Add_Small` benchmark adds a single character to the front of a rope with varying initial size, from 1kb to 15kb.  `Remove_Small` removes a single character.
 
