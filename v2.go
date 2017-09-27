@@ -131,9 +131,6 @@ func (r *V2) insert(position int, value string) error {
 		s := buf.String()
 		r.value = &s
 		r.length += valueLength
-		// v := string([]rune(*r.value)[0:position]) + value + string([]rune(*r.value)[position:])
-		// r.value = &v
-		// r.length = utf8.RuneCountInString(*r.value)
 	} else {
 		leftLength := r.left.length
 		if position < leftLength {
@@ -210,14 +207,13 @@ func (r *V2) remove(start, end int) error {
 	return nil
 }
 
+// V2Reader implements io.Reader and io.WriterTo for a V2 rope
 type V2Reader struct {
 	pos int
 	r   *V2
 }
 
 func (read *V2Reader) Read(p []byte) (n int, err error) {
-	// NOTE: method not currently tested, because test code is invoking WriteTo
-	// instead.
 	if read.pos == read.r.length {
 		return 0, io.EOF
 	}
@@ -229,6 +225,7 @@ func (read *V2Reader) Read(p []byte) (n int, err error) {
 	return copied, nil
 }
 
+// WriteTo writes the contents of a V2 to the provided io.Writer
 func (read *V2Reader) WriteTo(w io.Writer) (int64, error) {
 	n, err := read.writeNodeTo(read.r, w)
 	return int64(n), err
