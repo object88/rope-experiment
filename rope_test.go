@@ -268,6 +268,15 @@ func Test_Remove_Small_From_Beginning(t *testing.T) {
 
 		r.Remove(0, 1)
 
+		if r.Length() != stringSize.size-1 {
+			t.Fatalf("Incorrect length: expected %d, got %d", stringSize.size-1, r.Length())
+		}
+
+		_, rSize := utf8.DecodeRuneInString(init)
+		if r.ByteLength() != len(init)-rSize {
+			t.Fatalf("Incorrect byte length: expected %d, got %d", len(init)-rSize, r.ByteLength())
+		}
+
 		result := r.String()
 		if !utf8.ValidString(result) {
 			t.Fatal("Invalid UTF8 string")

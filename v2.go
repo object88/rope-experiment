@@ -197,6 +197,7 @@ func (r *V2) remove(start, end int) error {
 		buf.WriteString((*r.value)[byteEnd:])
 		s := buf.String()
 		r.value = &s
+		r.byteLength -= byteEnd - byteStart
 		r.length -= end - start
 	} else {
 		leftLength := r.left.length
@@ -211,6 +212,7 @@ func (r *V2) remove(start, end int) error {
 			rightStart := max(0, min(start-leftLength, rightLength))
 			r.right.remove(rightStart, rightEnd)
 		}
+		r.byteLength = r.left.byteLength + r.right.byteLength
 		r.length = r.left.length + r.right.length
 	}
 
