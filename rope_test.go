@@ -28,237 +28,142 @@ func Test_Insert(t *testing.T) {
 }
 
 func Test_Create(t *testing.T) {
-	charSets := []struct {
-		name      string
-		generator func(int) string
-	}{
-		{"ASCII", GenerateASCIIString},
-		{"Unicode", GenerateUnicodeString},
-	}
+	loopTest(t, "Create", func(t *testing.T, charSet charSet, stringSize stringSize) {
+		init := charSet.generator(stringSize.size)
+		r := create(t, init)
 
-	testCases := []struct {
-		size int
-	}{
-		{100},
-		{200},
-		{300},
-		{400},
-		{500},
-		{600},
-		{700},
-		{800},
-		{900},
-		{1000},
-	}
-
-	for _, charSet := range charSets {
-		for _, tc := range testCases {
-			t.Run(fmt.Sprintf("%s-Create-%d", charSet.name, tc.size), func(t *testing.T) {
-				init := charSet.generator(tc.size)
-				r := create(t, init)
-
-				if r == nil {
-					t.Fatal("Got nil")
-				}
-
-				if r.Length() != tc.size {
-					t.Fatalf("Incorrect length: expected %d, got %d", tc.size, r.Length())
-				}
-
-				if r.ByteLength() != len(init) {
-					t.Fatalf("Incorrect byte length: expected %d, got %d", len(init), r.ByteLength())
-				}
-
-				actual := r.String()
-				if actual != init {
-					t.Fatalf("Did not get same string back.\nexpected:\n%+q\ngot:\n%+q\n", init, actual)
-				}
-			})
+		if r == nil {
+			t.Fatal("Got nil")
 		}
-	}
+
+		if r.Length() != stringSize.size {
+			t.Fatalf("Incorrect length: expected %d, got %d", stringSize.size, r.Length())
+		}
+
+		if r.ByteLength() != len(init) {
+			t.Fatalf("Incorrect byte length: expected %d, got %d", len(init), r.ByteLength())
+		}
+
+		actual := r.String()
+		if actual != init {
+			t.Fatalf("Did not get same string back.\nexpected:\n%+q\ngot:\n%+q\n", init, actual)
+		}
+	})
 }
 
 func Test_Insert_Small_To_Beginning(t *testing.T) {
-	charSets := []struct {
-		name      string
-		generator func(int) string
-	}{
-		{"ASCII", GenerateASCIIString},
-		{"Unicode", GenerateUnicodeString},
-	}
+	loopTest(t, "Insert-To-Middle", func(t *testing.T, charSet charSet, stringSize stringSize) {
+		init := charSet.generator(stringSize.size)
+		r := create(t, init)
 
-	stringSizes := []struct {
-		size int
-	}{
-		{100},
-		{200},
-		{300},
-		{400},
-		{500},
-		{600},
-		{700},
-		{800},
-		{900},
-		{1000},
-	}
+		r.Insert(0, "a")
 
-	for _, charSet := range charSets {
-		for _, stringSize := range stringSizes {
-			t.Run(fmt.Sprintf("%s-Insert-%d", charSet.name, stringSize.size), func(t *testing.T) {
-				init := charSet.generator(stringSize.size)
-				r := create(t, init)
-
-				r.Insert(0, "a")
-
-				if r.Length() != stringSize.size+1 {
-					t.Fatalf("Incorrect length: expected %d, got %d", stringSize.size+1, r.Length())
-				}
-
-				if r.ByteLength() != len(init)+1 {
-					t.Fatalf("Incorrect byte length: expected %d, got %d", len(init)+1, r.ByteLength())
-				}
-
-				result := r.String()
-				expected := "a" + init
-				if result != expected {
-					t.Fatalf("Insert failed:\nExpected:\n'%+q'\nGet:\n'%+q'", expected, result)
-				}
-			})
+		if r.Length() != stringSize.size+1 {
+			t.Fatalf("Incorrect length: expected %d, got %d", stringSize.size+1, r.Length())
 		}
-	}
+
+		if r.ByteLength() != len(init)+1 {
+			t.Fatalf("Incorrect byte length: expected %d, got %d", len(init)+1, r.ByteLength())
+		}
+
+		result := r.String()
+		expected := "a" + init
+		if result != expected {
+			t.Fatalf("Insert failed:\nExpected:\n'%+q'\nGet:\n'%+q'", expected, result)
+		}
+	})
 }
 
 func Test_Insert_Small_To_Middle(t *testing.T) {
-	charSets := []struct {
-		name      string
-		generator func(int) string
-	}{
-		{"ASCII", GenerateASCIIString},
-		{"Unicode", GenerateUnicodeString},
-	}
+	loopTest(t, "Insert-To-Middle", func(t *testing.T, charSet charSet, stringSize stringSize) {
+		init := charSet.generator(stringSize.size)
+		i := utf8.RuneCountInString(init) / 2
+		r := create(t, init)
 
-	stringSizes := []struct {
-		size int
-	}{
-		{100},
-		{200},
-		{300},
-		{400},
-		{500},
-		{600},
-		{700},
-		{800},
-		{900},
-		{1000},
-	}
+		r.Insert(i, "a")
 
-	for _, charSet := range charSets {
-		for _, stringSize := range stringSizes {
-			t.Run(fmt.Sprintf("%s-Insert-%d", charSet.name, stringSize.size), func(t *testing.T) {
-				init := charSet.generator(stringSize.size)
-				i := utf8.RuneCountInString(init) / 2
-				r := create(t, init)
-
-				r.Insert(i, "a")
-
-				result := r.String()
-				runes := []rune(init)
-				expected := string(runes[0:i]) + "a" + string(runes[i:])
-				if result != expected {
-					t.Fatalf("Insert failed:\nExpected:\n'%s'\nGet:\n'%s'", init, result)
-				}
-			})
+		if r.Length() != stringSize.size+1 {
+			t.Fatalf("Incorrect length: expected %d, got %d", stringSize.size+1, r.Length())
 		}
-	}
+
+		if r.ByteLength() != len(init)+1 {
+			t.Fatalf("Incorrect byte length: expected %d, got %d", len(init)+1, r.ByteLength())
+		}
+
+		result := r.String()
+		runes := []rune(init)
+		expected := string(runes[0:i]) + "a" + string(runes[i:])
+		if result != expected {
+			t.Fatalf("Insert failed:\nExpected:\n'%s'\nGet:\n'%s'", init, result)
+		}
+	})
+}
+
+func Test_Insert_Small_To_End(t *testing.T) {
+	loopTest(t, "Insert-Small-To-End", func(t *testing.T, charSet charSet, stringSize stringSize) {
+		init := charSet.generator(stringSize.size)
+		r := create(t, init)
+
+		r.Insert(r.Length(), "a")
+
+		if r.Length() != stringSize.size+1 {
+			t.Fatalf("Incorrect length: expected %d, got %d", stringSize.size+1, r.Length())
+		}
+
+		if r.ByteLength() != len(init)+1 {
+			t.Fatalf("Incorrect byte length: expected %d, got %d", len(init)+1, r.ByteLength())
+		}
+
+		result := r.String()
+		expected := init + "a"
+		if result != expected {
+			t.Fatalf("Insert failed:\nExpected:\n'%s'\nGet:\n'%s'", init, result)
+		}
+
+	})
 }
 
 func Test_Insert_Large_To_Beginning(t *testing.T) {
-	charSets := []struct {
-		name      string
-		generator func(int) string
-	}{
-		{"ASCII", GenerateASCIIString},
-		{"Unicode", GenerateUnicodeString},
-	}
+	loopTest(t, "Insert-Large-To-Beginning", func(t *testing.T, charSet charSet, stringSize stringSize) {
+		init := charSet.generator(stringSize.size)
+		r := create(t, init)
 
-	stringSizes := []struct {
-		size int
-	}{
-		{100},
-		{200},
-		{300},
-		{400},
-		{500},
-		{600},
-		{700},
-		{800},
-		{900},
-		{1000},
-	}
+		x := charSet.generator(100)
+		r.Insert(0, x)
 
-	for _, charSet := range charSets {
-		for _, stringSize := range stringSizes {
-			t.Run(fmt.Sprintf("%s-Insert-Large-%d", charSet.name, stringSize.size), func(t *testing.T) {
-				init := charSet.generator(stringSize.size)
-				r := create(t, init)
-
-				x := charSet.generator(100)
-				r.Insert(0, x)
-
-				result := r.String()
-				expected := x + init
-				if result != expected {
-					t.Fatalf("Insert failed:\nExpected:\n'%+q'\nGet:\n'%+q'", expected, result)
-				}
-			})
+		if r.Length() != stringSize.size+100 {
+			t.Fatalf("Incorrect length: expected %d, got %d", stringSize.size+100, r.Length())
 		}
-	}
+
+		if r.ByteLength() != len(init)+len(x) {
+			t.Fatalf("Incorrect byte length: expected %d, got %d", len(init)+len(x), r.ByteLength())
+		}
+
+		result := r.String()
+		expected := x + init
+		if result != expected {
+			t.Fatalf("Insert failed:\nExpected:\n'%+q'\nGet:\n'%+q'", expected, result)
+		}
+	})
 }
 
 func Test_Reader(t *testing.T) {
-	charSets := []struct {
-		name      string
-		generator func(int) string
-	}{
-		{"ASCII", GenerateASCIIString},
-		{"Unicode", GenerateUnicodeString},
-	}
+	loopTest(t, "Reader", func(t *testing.T, charSet charSet, stringSize stringSize) {
+		init := charSet.generator(stringSize.size)
 
-	stringSizes := []struct {
-		size int
-	}{
-		{100},
-		{200},
-		{300},
-		{400},
-		{500},
-		{600},
-		{700},
-		{800},
-		{900},
-		{1000},
-	}
+		var buf bytes.Buffer
+		buf.Grow(len(init))
 
-	for _, charSet := range charSets {
-		for _, stringSize := range stringSizes {
-			t.Run(fmt.Sprintf("%s-Reader-%d", charSet.name, stringSize.size), func(t *testing.T) {
-				init := charSet.generator(stringSize.size)
+		r := create(t, init)
+		reader := r.NewReader()
 
-				var buf bytes.Buffer
-				buf.Grow(len(init))
+		io.Copy(&buf, reader)
 
-				r := create(t, init)
-				reader := r.NewReader()
-
-				io.Copy(&buf, reader)
-
-				result := string(buf.Bytes())
-				if strings.Compare(result, init) != 0 {
-					t.Fatalf("Read failed:\nExpected:\n'%s'\nGot:\n'%s'", init, result)
-				}
-			})
+		result := string(buf.Bytes())
+		if strings.Compare(result, init) != 0 {
+			t.Fatalf("Read failed:\nExpected:\n'%s'\nGot:\n'%s'", init, result)
 		}
-	}
+	})
 }
 
 func Test_Remove_Small_From_Beginning(t *testing.T) {
@@ -290,11 +195,24 @@ func Test_Remove_Small_From_Beginning(t *testing.T) {
 
 func Test_Remove_Small_From_Middle(t *testing.T) {
 	loopTest(t, "Remove-From-Middle", func(t *testing.T, charSet charSet, stringSize stringSize) {
-		init := charSet.generator(stringSize.size)
-		i := utf8.RuneCountInString(init) / 2
+		i := stringSize.size / 2
+		x1 := charSet.generator(i)
+		x2 := charSet.generator(1)
+		x3 := charSet.generator(i - 1)
+		init := x1 + x2 + x3
+
 		r := create(t, init)
 
 		r.Remove(i, i+1)
+
+		if r.Length() != stringSize.size-1 {
+			t.Fatalf("Incorrect length: expected %d, got %d", stringSize.size-1, r.Length())
+		}
+
+		_, x2Size := utf8.DecodeRuneInString(x2)
+		if r.ByteLength() != len(init)-x2Size {
+			t.Fatalf("Incorrect byte length: expected %d, got %d", len(init)-x2Size, r.ByteLength())
+		}
 
 		result := r.String()
 		if !utf8.ValidString(result) {
@@ -308,7 +226,7 @@ func Test_Remove_Small_From_Middle(t *testing.T) {
 			}
 			t.Fatal("Invalid UTF8 string")
 		}
-		expected := string([]rune(init)[0:i]) + string([]rune(init)[i+1:])
+		expected := x1 + x3
 		if result != expected {
 			t.Fatalf("Remove failed:\nOriginal:\n%q\nExpected:\n%q\nGet:\n%q", init, expected, result)
 		}
