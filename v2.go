@@ -33,6 +33,10 @@ func CreateV2(initial string) *V2 {
 	return r
 }
 
+func (r *V2) ByteLength() int {
+	return r.byteLength
+}
+
 func (r *V2) Insert(position int, value string) error {
 	if r == nil {
 		return fmt.Errorf("Nil pointer receiver")
@@ -43,6 +47,10 @@ func (r *V2) Insert(position int, value string) error {
 	}
 
 	return r.insert(position, value)
+}
+
+func (r *V2) Length() int {
+	return r.length
 }
 
 func (r *V2) NewReader() io.Reader {
@@ -124,21 +132,24 @@ func (r *V2) insert(position int, value string) error {
 		var buf bytes.Buffer
 		offset := r.findByteOffsets(position)
 		valueLength := utf8.RuneCountInString(value)
-		buf.Grow(r.length + len(value))
+		valueBytesLength := len(value)
+		buf.Grow(r.byteLength + valueBytesLength)
 		buf.WriteString((*r.value)[0:offset])
 		buf.WriteString(value)
 		buf.WriteString((*r.value)[offset:])
 		s := buf.String()
 		r.value = &s
+		r.byteLength += valueBytesLength
 		r.length += valueLength
 	} else {
 		leftLength := r.left.length
 		if position < leftLength {
 			r.left.insert(position, value)
-			r.length = r.left.length + r.right.length
 		} else {
 			r.right.insert(position-leftLength, value)
 		}
+		r.byteLength = r.left.byteLength + r.right.byteLength
+		r.length = r.left.length + r.right.length
 	}
 	r.adjust()
 	return nil

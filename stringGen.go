@@ -20,6 +20,8 @@ const (
 
 var src = rand.NewSource(time.Now().UnixNano())
 
+// GenerateASCIIString creates a UTF8-encoded string which contains `n`
+// characters in the [a-zA-Z] range.
 func GenerateASCIIString(n int) string {
 	b := make([]byte, n)
 	// A src.Int63() generates 63 random bits, enough for letterIdxMax characters!
@@ -38,6 +40,9 @@ func GenerateASCIIString(n int) string {
 	return string(b)
 }
 
+// GenerateUnicodeString creates a UTF8-encoded string which contains `n`
+// characters, some of which will be ASCII [a-z], others UTF8 characters,
+// and other Unicode characters.
 func GenerateUnicodeString(n int) string {
 	b := make([]rune, n)
 

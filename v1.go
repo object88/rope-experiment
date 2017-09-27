@@ -16,6 +16,10 @@ func CreateV1(initial string) Rope {
 	return &V1{initial}
 }
 
+func (r *V1) ByteLength() int {
+	return len(r.value)
+}
+
 func (r *V1) Insert(start int, value string) error {
 	var buf bytes.Buffer
 	offset := r.findByteOffsets(start)
@@ -25,6 +29,10 @@ func (r *V1) Insert(start int, value string) error {
 	buf.WriteString(r.value[offset:])
 	r.value = buf.String()
 	return nil
+}
+
+func (r *V1) Length() int {
+	return utf8.RuneCountInString(r.value)
 }
 
 func (r *V1) NewReader() io.Reader {

@@ -10,8 +10,14 @@ import (
 type Rope interface {
 	fmt.Stringer
 
+	// ByteLength returns the number of bytes for all the runes in the rope
+	ByteLength() int
+
 	// Insert adds the provided `value` string starting at `start`
 	Insert(start int, value string) error
+
+	// Length returns the number of runes in the rope
+	Length() int
 
 	// NewReader returns an io.Reader over the Rope
 	NewReader() io.Reader

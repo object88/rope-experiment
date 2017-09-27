@@ -50,6 +50,10 @@ func CreateV3FromBytes(initial []byte) *V3 {
 	return r
 }
 
+func (r *V3) ByteLength() int {
+	return r.byteLength
+}
+
 func (r *V3) Insert(position int, value string) error {
 	if r == nil {
 		return fmt.Errorf("Nil pointer receiver")
@@ -60,6 +64,10 @@ func (r *V3) Insert(position int, value string) error {
 	}
 
 	return r.insert(position, value)
+}
+
+func (r *V3) Length() int {
+	return r.length
 }
 
 func (r *V3) NewReader() io.Reader {

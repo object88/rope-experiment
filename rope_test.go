@@ -61,6 +61,14 @@ func Test_Create(t *testing.T) {
 					t.Fatal("Got nil")
 				}
 
+				if r.Length() != tc.size {
+					t.Fatalf("Incorrect length: expected %d, got %d", tc.size, r.Length())
+				}
+
+				if r.ByteLength() != len(init) {
+					t.Fatalf("Incorrect byte length: expected %d, got %d", len(init), r.ByteLength())
+				}
+
 				actual := r.String()
 				if actual != init {
 					t.Fatalf("Did not get same string back.\nexpected:\n%+q\ngot:\n%+q\n", init, actual)
@@ -70,7 +78,7 @@ func Test_Create(t *testing.T) {
 	}
 }
 
-func Test_Insert_To_Beginning(t *testing.T) {
+func Test_Insert_Small_To_Beginning(t *testing.T) {
 	charSets := []struct {
 		name      string
 		generator func(int) string
@@ -102,6 +110,14 @@ func Test_Insert_To_Beginning(t *testing.T) {
 
 				r.Insert(0, "a")
 
+				if r.Length() != stringSize.size+1 {
+					t.Fatalf("Incorrect length: expected %d, got %d", stringSize.size+1, r.Length())
+				}
+
+				if r.ByteLength() != len(init)+1 {
+					t.Fatalf("Incorrect byte length: expected %d, got %d", len(init)+1, r.ByteLength())
+				}
+
 				result := r.String()
 				expected := "a" + init
 				if result != expected {
@@ -112,7 +128,7 @@ func Test_Insert_To_Beginning(t *testing.T) {
 	}
 }
 
-func Test_Insert_To_Middle(t *testing.T) {
+func Test_Insert_Small_To_Middle(t *testing.T) {
 	charSets := []struct {
 		name      string
 		generator func(int) string
@@ -150,6 +166,49 @@ func Test_Insert_To_Middle(t *testing.T) {
 				expected := string(runes[0:i]) + "a" + string(runes[i:])
 				if result != expected {
 					t.Fatalf("Insert failed:\nExpected:\n'%s'\nGet:\n'%s'", init, result)
+				}
+			})
+		}
+	}
+}
+
+func Test_Insert_Large_To_Beginning(t *testing.T) {
+	charSets := []struct {
+		name      string
+		generator func(int) string
+	}{
+		{"ASCII", GenerateASCIIString},
+		{"Unicode", GenerateUnicodeString},
+	}
+
+	stringSizes := []struct {
+		size int
+	}{
+		{100},
+		{200},
+		{300},
+		{400},
+		{500},
+		{600},
+		{700},
+		{800},
+		{900},
+		{1000},
+	}
+
+	for _, charSet := range charSets {
+		for _, stringSize := range stringSizes {
+			t.Run(fmt.Sprintf("%s-Insert-Large-%d", charSet.name, stringSize.size), func(t *testing.T) {
+				init := charSet.generator(stringSize.size)
+				r := create(t, init)
+
+				x := charSet.generator(100)
+				r.Insert(0, x)
+
+				result := r.String()
+				expected := x + init
+				if result != expected {
+					t.Fatalf("Insert failed:\nExpected:\n'%+q'\nGet:\n'%+q'", expected, result)
 				}
 			})
 		}
@@ -202,103 +261,49 @@ func Test_Reader(t *testing.T) {
 	}
 }
 
-func Test_Remove_From_Beginning(t *testing.T) {
-	charSets := []struct {
-		name      string
-		generator func(int) string
-	}{
-		{"ASCII", GenerateASCIIString},
-		{"Unicode", GenerateUnicodeString},
-	}
+func Test_Remove_Small_From_Beginning(t *testing.T) {
+	loopTest(t, "Remove-From-Beginning", func(t *testing.T, charSet charSet, stringSize stringSize) {
+		init := charSet.generator(stringSize.size)
+		r := create(t, init)
 
-	stringSizes := []struct {
-		size int
-	}{
-		{100},
-		{200},
-		{300},
-		{400},
-		{500},
-		{600},
-		{700},
-		{800},
-		{900},
-		{1000},
-	}
+		r.Remove(0, 1)
 
-	for _, charSet := range charSets {
-		for _, stringSize := range stringSizes {
-			t.Run(fmt.Sprintf("%s-Remove-%d", charSet.name, stringSize.size), func(t *testing.T) {
-				init := charSet.generator(stringSize.size)
-				r := create(t, init)
-
-				r.Remove(0, 1)
-
-				result := r.String()
-				if !utf8.ValidString(result) {
-					t.Fatal("Invalid UTF8 string")
-				}
-				expected := string([]rune(init)[1:])
-				if result != expected {
-					t.Fatalf("Remove failed:\nOriginal:\n%q\nExpected:\n%q\nGet:\n%q", init, expected, result)
-				}
-			})
+		result := r.String()
+		if !utf8.ValidString(result) {
+			t.Fatal("Invalid UTF8 string")
 		}
-	}
+		expected := string([]rune(init)[1:])
+		if result != expected {
+			t.Fatalf("Remove failed:\nOriginal:\n%q\nExpected:\n%q\nGet:\n%q", init, expected, result)
+		}
+	})
 }
 
-func Test_Remove_From_Middle(t *testing.T) {
-	charSets := []struct {
-		name      string
-		generator func(int) string
-	}{
-		{"ASCII", GenerateASCIIString},
-		{"Unicode", GenerateUnicodeString},
-	}
+func Test_Remove_Small_From_Middle(t *testing.T) {
+	loopTest(t, "Remove-From-Middle", func(t *testing.T, charSet charSet, stringSize stringSize) {
+		init := charSet.generator(stringSize.size)
+		i := utf8.RuneCountInString(init) / 2
+		r := create(t, init)
 
-	stringSizes := []struct {
-		size int
-	}{
-		{100},
-		{200},
-		{300},
-		{400},
-		{500},
-		{600},
-		{700},
-		{800},
-		{900},
-		{1000},
-	}
+		r.Remove(i, i+1)
 
-	for _, charSet := range charSets {
-		for _, stringSize := range stringSizes {
-			t.Run(fmt.Sprintf("%s-Remove-%d", charSet.name, stringSize.size), func(t *testing.T) {
-				init := charSet.generator(stringSize.size)
-				i := utf8.RuneCountInString(init) / 2
-				r := create(t, init)
-
-				r.Remove(i, i+1)
-
-				result := r.String()
-				if !utf8.ValidString(result) {
-					b := []byte(result)
-					for i := 0; i < len(result); {
-						ru, n := utf8.DecodeRune(b)
-						if ru == utf8.RuneError {
-							t.Fatalf("Invalid UTF8 string; first instance at %d\n%s", i, result)
-						}
-						i += n
-					}
-					t.Fatal("Invalid UTF8 string")
+		result := r.String()
+		if !utf8.ValidString(result) {
+			b := []byte(result)
+			for i := 0; i < len(result); {
+				ru, n := utf8.DecodeRune(b)
+				if ru == utf8.RuneError {
+					t.Fatalf("Invalid UTF8 string; first instance at %d\n%s", i, result)
 				}
-				expected := string([]rune(init)[0:i]) + string([]rune(init)[i+1:])
-				if result != expected {
-					t.Fatalf("Remove failed:\nOriginal:\n%q\nExpected:\n%q\nGet:\n%q", init, expected, result)
-				}
-			})
+				i += n
+			}
+			t.Fatal("Invalid UTF8 string")
 		}
-	}
+		expected := string([]rune(init)[0:i]) + string([]rune(init)[i+1:])
+		if result != expected {
+			t.Fatalf("Remove failed:\nOriginal:\n%q\nExpected:\n%q\nGet:\n%q", init, expected, result)
+		}
+	})
 }
 
 func Benchmark_Add_Small(b *testing.B) {
@@ -371,6 +376,16 @@ func Benchmark_Remove_Small(b *testing.B) {
 	}
 }
 
+func create(t *testing.T, init string) Rope {
+	rc, err := getCreater()
+	if err != nil {
+		t.Fatal(err)
+		return nil
+	}
+	r := rc(init)
+	return r
+}
+
 func getCreater() (ropeCreator, error) {
 	var rc ropeCreator
 	if *version == "1" {
@@ -384,6 +399,43 @@ func getCreater() (ropeCreator, error) {
 	}
 
 	return rc, nil
+}
+
+type charSet struct {
+	name      string
+	generator func(int) string
+}
+
+type stringSize struct {
+	size int
+}
+
+func loopTest(t *testing.T, name string, f func(t *testing.T, charSet charSet, stringSize stringSize)) {
+	charSets := []charSet{
+		{"ASCII", GenerateASCIIString},
+		{"Unicode", GenerateUnicodeString},
+	}
+
+	stringSizes := []stringSize{
+		{100},
+		{200},
+		{300},
+		{400},
+		{500},
+		{600},
+		{700},
+		{800},
+		{900},
+		{1000},
+	}
+
+	for _, charSet := range charSets {
+		for _, stringSize := range stringSizes {
+			t.Run(fmt.Sprintf("%s-%s-%d", charSet.name, name, stringSize.size), func(t *testing.T) {
+				f(t, charSet, stringSize)
+			})
+		}
+	}
 }
 
 func testAdd(creater ropeCreator, basename, init string, b *testing.B) {
@@ -461,14 +513,4 @@ func testRemove(creater ropeCreator, basename, init string, b *testing.B) {
 			}
 		}
 	})
-}
-
-func create(t *testing.T, init string) Rope {
-	rc, err := getCreater()
-	if err != nil {
-		t.Fatal(err)
-		return nil
-	}
-	r := rc(init)
-	return r
 }
