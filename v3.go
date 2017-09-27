@@ -8,17 +8,39 @@ import (
 )
 
 type V3 struct {
-	right      *V3
 	left       *V3
+	right      *V3
 	value      *[]byte
 	length     int
 	byteLength int
 }
 
 func CreateV3(initial string) *V3 {
-	b := []byte(initial)
-	r := &V3{nil, nil, &b, utf8.RuneCountInString(initial), len(initial)}
-	r.adjust()
+	byteLength := len(initial)
+	charLength := utf8.RuneCountInString(initial)
+	var r *V3
+	if len(initial) > splitLength {
+		divide := charLength >> 1
+		offset := findByteOffset(initial, divide)
+		r = &V3{
+			CreateV3(initial[:offset]),
+			CreateV3(initial[offset:]),
+			nil,
+			charLength,
+			byteLength,
+		}
+	} else {
+		b := make([]byte, splitLength)
+		copy(b, initial)
+		r = &V3{
+			nil,
+			nil,
+			&b,
+			charLength,
+			byteLength,
+		}
+	}
+
 	return r
 }
 
@@ -79,11 +101,13 @@ func (r *V3) Remove(start, end int) error {
 }
 
 func (r *V3) String() string {
-	var buf bytes.Buffer
-	buf.Grow(r.byteLength)
 	read := r.NewReader()
-	io.Copy(&buf, read)
-	return string(buf.Bytes())
+	b := make([]byte, r.byteLength)
+	for n := 0; n < r.byteLength; {
+		m, _ := read.Read(b[n:])
+		n += m
+	}
+	return string(b)
 }
 
 func (r *V3) adjust() {
@@ -92,7 +116,7 @@ func (r *V3) adjust() {
 			divide := r.length >> 1
 			offset := r.findByteOffsets(divide)
 			r.left = CreateV3FromBytes((*r.value)[:offset])
-			r.right = CreateV3FromBytes((*r.value)[offset:])
+			r.right = CreateV3FromBytes((*r.value)[offset:r.byteLength])
 			r.value = nil
 		}
 	} else {
@@ -104,16 +128,17 @@ func (r *V3) adjust() {
 
 func (r *V3) insert(position int, value string) error {
 	if r.value != nil {
-		var buf bytes.Buffer
 		offset := r.findByteOffsets(position)
 		valueLength := utf8.RuneCountInString(value)
-		buf.Grow(r.length + len(value))
+		valueBytesLength := len(value)
+		var buf bytes.Buffer
+		buf.Grow(r.byteLength + valueBytesLength)
 		buf.Write((*r.value)[0:offset])
 		buf.Write([]byte(value))
 		buf.Write((*r.value)[offset:])
 		b := buf.Bytes()
 		r.value = &b
-		r.byteLength = len(b)
+		r.byteLength += valueBytesLength
 		r.length += valueLength
 	} else {
 		leftLength := r.left.length
@@ -142,9 +167,8 @@ func (r *V3) join() {
 }
 
 func (r *V3) findByteOffsets(position int) int {
-	rs := []rune(string(*r.value))
-
 	offset := 0
+	rs := []rune(string(*r.value))
 
 	for i := 0; i < position; i++ {
 		offset += utf8.RuneLen(rs[i])
@@ -153,17 +177,17 @@ func (r *V3) findByteOffsets(position int) int {
 	return offset
 }
 
-func (r *V3) locate(position int) (*V3, int) {
+func (r *V3) locate(offset int) (*V3, int) {
 	if r.value != nil {
-		return r, position
+		return r, offset
 	}
 
-	leftLength := r.left.length
-	if position < leftLength {
-		return r.left.locate(position)
+	leftByteLength := r.left.byteLength
+	if offset < leftByteLength {
+		return r.left.locate(offset)
 	}
 
-	return r.right.locate(position - leftLength)
+	return r.right.locate(offset - leftByteLength)
 }
 
 func (r *V3) rebuild() {
@@ -175,15 +199,10 @@ func (r *V3) rebuild() {
 
 func (r *V3) remove(start, end int) error {
 	if r.value != nil {
-		var buf bytes.Buffer
 		byteStart := r.findByteOffsets(start)
 		byteEnd := r.findByteOffsets(end)
-		buf.Grow(len(*r.value) - byteEnd + byteStart)
-		buf.Write((*r.value)[0:byteStart])
-		buf.Write((*r.value)[byteEnd:])
-		b := buf.Bytes()
-		r.value = &b
-		r.byteLength = len(b)
+		copy((*r.value)[byteStart:], (*r.value)[byteEnd:])
+		r.byteLength -= byteEnd - byteStart
 		r.length -= end - start
 	} else {
 		leftLength := r.left.length
@@ -206,25 +225,25 @@ func (r *V3) remove(start, end int) error {
 	return nil
 }
 
+// V3Reader implements io.Reader and io.WriterTo for a V3 rope
 type V3Reader struct {
-	pos int
-	r   *V3
+	offset int
+	r      *V3
 }
 
 func (read *V3Reader) Read(p []byte) (n int, err error) {
-	// NOTE: method not currently tested, because test code is invoking WriteTo
-	// instead.
-	if read.pos == read.r.byteLength {
+	if read.offset == read.r.byteLength {
 		return 0, io.EOF
 	}
 
-	node, offset := read.r.locate(read.pos)
+	node, offset := read.r.locate(read.offset)
 
-	copied := copy(p, (*node.value)[offset:])
-	read.pos += copied
+	copied := copy(p, (*node.value)[offset:node.byteLength])
+	read.offset += copied
 	return copied, nil
 }
 
+// WriteTo writes the contents of a V2 to the provided io.Writer
 func (read *V3Reader) WriteTo(w io.Writer) (int64, error) {
 	n, err := read.writeNodeTo(read.r, w)
 	return int64(n), err
@@ -232,8 +251,8 @@ func (read *V3Reader) WriteTo(w io.Writer) (int64, error) {
 
 func (read *V3Reader) writeNodeTo(r *V3, w io.Writer) (int, error) {
 	if r.value != nil {
-		copied, err := w.Write(*r.value)
-		if copied != len(*r.value) && err == nil {
+		copied, err := w.Write((*r.value)[:r.byteLength])
+		if copied != r.byteLength && err == nil {
 			err = io.ErrShortWrite
 		}
 		return copied, err
@@ -250,4 +269,15 @@ func (read *V3Reader) writeNodeTo(r *V3, w io.Writer) (int, error) {
 	m, err = read.writeNodeTo(r.right, w)
 
 	return int(n + m), err
+}
+
+func findByteOffset(s string, position int) int {
+	offset := 0
+	rs := []rune(s)
+
+	for i := 0; i < position; i++ {
+		offset += utf8.RuneLen(rs[i])
+	}
+
+	return offset
 }

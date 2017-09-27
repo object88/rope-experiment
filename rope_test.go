@@ -27,6 +27,49 @@ func Test_Insert(t *testing.T) {
 	}
 }
 
+func Test_Create(t *testing.T) {
+	charSets := []struct {
+		name      string
+		generator func(int) string
+	}{
+		{"ASCII", GenerateASCIIString},
+		{"Unicode", GenerateUnicodeString},
+	}
+
+	testCases := []struct {
+		size int
+	}{
+		{100},
+		{200},
+		{300},
+		{400},
+		{500},
+		{600},
+		{700},
+		{800},
+		{900},
+		{1000},
+	}
+
+	for _, charSet := range charSets {
+		for _, tc := range testCases {
+			t.Run(fmt.Sprintf("%s-Create-%d", charSet.name, tc.size), func(t *testing.T) {
+				init := charSet.generator(tc.size)
+				r := create(t, init)
+
+				if r == nil {
+					t.Fatal("Got nil")
+				}
+
+				actual := r.String()
+				if actual != init {
+					t.Fatalf("Did not get same string back.\nexpected:\n%+q\ngot:\n%+q\n", init, actual)
+				}
+			})
+		}
+	}
+}
+
 func Test_Insert_To_Beginning(t *testing.T) {
 	charSets := []struct {
 		name      string
@@ -62,7 +105,7 @@ func Test_Insert_To_Beginning(t *testing.T) {
 				result := r.String()
 				expected := "a" + init
 				if result != expected {
-					t.Fatalf("Insert failed:\nExpected:\n'%s'\nGet:\n'%s'", init, result)
+					t.Fatalf("Insert failed:\nExpected:\n'%+q'\nGet:\n'%+q'", expected, result)
 				}
 			})
 		}
