@@ -2,6 +2,7 @@ package ropeExperiment
 
 import (
 	"bytes"
+	"fmt"
 	"io"
 	"strings"
 	"unicode/utf8"
@@ -16,8 +17,24 @@ func CreateV1(initial string) Rope {
 	return &V1{initial}
 }
 
+func (r *V1) Alter(start, end int, value string) error {
+	var buf bytes.Buffer
+	byteStart := r.findByteOffsets(start)
+	byteEnd := r.findByteOffsets(end)
+	buf.Grow(len(r.value) + len(value) - byteEnd + byteStart)
+	buf.WriteString(r.value[:byteStart])
+	buf.WriteString(value)
+	buf.WriteString(r.value[byteEnd:])
+	r.value = buf.String()
+	return nil
+}
+
 func (r *V1) ByteLength() int {
 	return len(r.value)
+}
+
+func (r *V1) GoString() string {
+	return fmt.Sprintf("[%d, %d]", r.Length(), r.ByteLength())
 }
 
 func (r *V1) Insert(start int, value string) error {

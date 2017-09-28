@@ -50,8 +50,46 @@ func CreateV3FromBytes(initial []byte) *V3 {
 	return r
 }
 
+func (r *V3) Alter(start, end int, value string) error {
+	if r == nil {
+		return fmt.Errorf("Nil pointer receiver")
+	}
+
+	if start < 0 || start > r.length {
+		return fmt.Errorf("start is not within rope bounds")
+	}
+
+	if end < 0 || end > r.length {
+		return fmt.Errorf("end is not within rope bounds")
+	}
+
+	if start > end {
+		return fmt.Errorf("start is after end")
+	}
+
+	if start == end {
+		// This is a pure insert
+		if value == "" {
+			// No-op; nothing to insert
+			return nil
+		}
+
+		return r.insert(start, value)
+
+	} else if value == "" {
+		// This is a pure remove
+		return r.remove(start, end)
+	}
+
+	return r.alter(start, end, value)
+}
+
 func (r *V3) ByteLength() int {
 	return r.byteLength
+}
+
+func (r *V3) GoString() string {
+	return "Not implemented"
 }
 
 func (r *V3) Insert(position int, value string) error {
@@ -132,6 +170,48 @@ func (r *V3) adjust() {
 			r.join()
 		}
 	}
+}
+
+func (r *V3) alter(start, end int, value string) error {
+	valueLength := utf8.RuneCountInString(value)
+	valueByteLength := len(value)
+
+	if r.value != nil {
+		var buf bytes.Buffer
+		byteStart := r.findByteOffsets(start)
+		byteEnd := r.findByteOffsets(end)
+		// fmt.Printf("[%d:%d::%d:%d] %d, %d\n", start, byteStart, end, byteEnd, len(*r.value), valueByteLength)
+		buf.Grow(len(*r.value) - byteEnd + byteStart + valueByteLength)
+		buf.Write((*r.value)[0:byteStart])
+		buf.WriteString(value)
+		buf.Write((*r.value)[byteEnd:])
+		b := buf.Bytes()
+		r.value = &b
+		r.byteLength -= byteEnd - byteStart - valueByteLength
+		r.length -= end - start - valueLength
+	} else {
+		leftLength := r.left.length
+		leftStart := min(start, leftLength)
+		rightLength := r.right.length
+		rightEnd := max(0, min(end-leftLength, rightLength))
+
+		valueCutoff := findByteOffset(value, min(valueLength, leftLength-leftStart))
+
+		if leftStart < leftLength {
+			leftEnd := min(end, leftLength)
+			r.left.alter(leftStart, leftEnd, value[:valueCutoff])
+		}
+		if rightEnd > 0 || valueCutoff < valueByteLength {
+			rightStart := max(0, min(start-leftLength, rightLength))
+			valueStart := findByteOffset(value, min(valueLength, leftLength-leftStart))
+			r.right.alter(rightStart, rightEnd, value[valueStart:])
+		}
+		r.byteLength = r.left.byteLength + r.right.byteLength
+		r.length = r.left.length + r.right.length
+	}
+
+	r.adjust()
+	return nil
 }
 
 func (r *V3) insert(position int, value string) error {
@@ -281,11 +361,12 @@ func (read *V3Reader) writeNodeTo(r *V3, w io.Writer) (int, error) {
 
 func findByteOffset(s string, position int) int {
 	offset := 0
-	rs := []rune(s)
-
 	for i := 0; i < position; i++ {
-		offset += utf8.RuneLen(rs[i])
+		r, n := utf8.DecodeRuneInString(s[offset:])
+		if r == utf8.RuneError {
+			return -1
+		}
+		offset += n
 	}
-
 	return offset
 }

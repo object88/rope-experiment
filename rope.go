@@ -9,6 +9,12 @@ import (
 // from the rope structure
 type Rope interface {
 	fmt.Stringer
+	fmt.GoStringer
+
+	// Alter replaces the text between the start and end position with the
+	// provided value.  This will grow or shrink the rope by the difference
+	// between the value length and (end - start)
+	Alter(start, end int, value string) error
 
 	// ByteLength returns the number of bytes for all the runes in the rope
 	ByteLength() int

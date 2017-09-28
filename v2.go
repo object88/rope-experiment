@@ -4,6 +4,7 @@ import (
 	"bytes"
 	"fmt"
 	"io"
+	"strings"
 	"unicode/utf8"
 )
 
@@ -33,8 +34,46 @@ func CreateV2(initial string) *V2 {
 	return r
 }
 
+func (r *V2) Alter(start, end int, value string) error {
+	if r == nil {
+		return fmt.Errorf("Nil pointer receiver")
+	}
+
+	if start < 0 || start > r.length {
+		return fmt.Errorf("start is not within rope bounds")
+	}
+
+	if end < 0 || end > r.length {
+		return fmt.Errorf("end is not within rope bounds")
+	}
+
+	if start > end {
+		return fmt.Errorf("start is after end")
+	}
+
+	if start == end {
+		// This is a pure insert
+		if value == "" {
+			// No-op; nothing to insert
+			return nil
+		}
+
+		return r.insert(start, value)
+
+	} else if value == "" {
+		// This is a pure remove
+		return r.remove(start, end)
+	}
+
+	return r.alter(start, end, value)
+}
+
 func (r *V2) ByteLength() int {
 	return r.byteLength
+}
+
+func (r *V2) GoString() string {
+	return r.goString(0)
 }
 
 func (r *V2) Insert(position int, value string) error {
@@ -115,6 +154,47 @@ func (r *V2) adjust() {
 	}
 }
 
+func (r *V2) alter(start, end int, value string) error {
+	valueLength := utf8.RuneCountInString(value)
+	valueByteLength := len(value)
+
+	if r.value != nil {
+		var buf bytes.Buffer
+		byteStart := r.findByteOffsets(start)
+		byteEnd := r.findByteOffsets(end)
+		buf.Grow(len(*r.value) - byteEnd + byteStart + valueByteLength)
+		buf.WriteString((*r.value)[0:byteStart])
+		buf.WriteString(value)
+		buf.WriteString((*r.value)[byteEnd:])
+		s := buf.String()
+		r.value = &s
+		r.byteLength -= byteEnd - byteStart - valueByteLength
+		r.length -= end - start - valueLength
+	} else {
+		leftLength := r.left.length
+		leftStart := min(start, leftLength)
+		rightLength := r.right.length
+		rightEnd := max(0, min(end-leftLength, rightLength))
+
+		valueCutoff := findByteOffset(value, min(valueLength, leftLength-leftStart))
+
+		if leftStart < leftLength {
+			leftEnd := min(end, leftLength)
+			r.left.alter(leftStart, leftEnd, value[:valueCutoff])
+		}
+		if rightEnd > 0 || valueCutoff < valueByteLength {
+			rightStart := max(0, min(start-leftLength, rightLength))
+			valueStart := findByteOffset(value, min(valueLength, leftLength-leftStart))
+			r.right.alter(rightStart, rightEnd, value[valueStart:])
+		}
+		r.byteLength = r.left.byteLength + r.right.byteLength
+		r.length = r.left.length + r.right.length
+	}
+
+	r.adjust()
+	return nil
+}
+
 func (r *V2) findByteOffsets(position int) int {
 	rs := []rune(*r.value)
 
@@ -125,6 +205,24 @@ func (r *V2) findByteOffsets(position int) int {
 	}
 
 	return offset
+}
+
+func (r *V2) goString(lvl int) string {
+	if r.value != nil {
+		return fmt.Sprintf(
+			"[%d:%d]",
+			r.length,
+			r.byteLength)
+	}
+
+	spacer := strings.Repeat("  ", lvl)
+	nlvl := lvl + 1
+	return fmt.Sprintf(
+		"%s%s\n%s%s",
+		spacer,
+		r.left.goString(nlvl),
+		spacer,
+		r.right.goString(nlvl))
 }
 
 func (r *V2) insert(position int, value string) error {
